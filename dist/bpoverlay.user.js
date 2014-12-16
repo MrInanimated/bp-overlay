@@ -1,11 +1,11 @@
 // ==UserScript==
 // @name         BombParty Overlay
-// @version      1.2.15
+// @version      1.2.16
 // @description  Overlay + Utilities for BombParty!
 // @icon         https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/dist/icon.png
 // @icon64       https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/dist/icon64.png
 // @downloadURL  https://github.com/MrInanimated/bp-overlay/raw/master/dist/bpoverlay.user.js
-// @author       Tianlin Zhang
+// @author       Tianlin Zhang and Skandalabrandur
 // @match        http://bombparty.sparklinlabs.com/play/*
 // @resource     twitch_global http://twitchemotes.com/global.json
 // @resource     twitch_subscriber http://twitchemotes.com/subscriber.json
@@ -1129,6 +1129,41 @@ var source = function() {
 					}.call(this, "author" in n ? n.author : "undefined" != typeof author ? author : void 0, "text" in n ? n.text : "undefined" != typeof text ? text : void 0), a.join("")
 				};
 
+				// Get rid of the annoying Ban and Mod buttons next to the chat message.
+				JST["nuclearnode/chatUser"] = function (e) {
+					// Again, this is just elisee's code with like just a tiny bit changed
+					var t, a = [],
+						n = e || {};
+					return function (e, n, r) {
+						var l = [];
+						(function () {
+							var t = e.serviceHandles;
+							if ("number" == typeof t.length)
+								for (var a = 0, r = t.length; r > a; a++) {
+									var s = t[a];
+									null == s && (s = n.t("nuclearnode:serviceHandlePlaceholder")), "guest" != a && l.push(n.t("nuclearnode:userHandleOnService", {
+										handle: s,
+										service: n.t("nuclearnode:loginServices." + a)
+									}))
+								} else {
+									var r = 0;
+									for (var a in t) {
+										r++;
+										var s = t[a];
+										null == s && (s = n.t("nuclearnode:serviceHandlePlaceholder")), "guest" != a && l.push(n.t("nuclearnode:userHandleOnService", {
+											handle: s,
+											service: n.t("nuclearnode:loginServices." + a)
+										}))
+									}
+								}
+						})
+						.call(this), a.push("<span" + jade.attr("title", l.join(", "), !0, !1) + ' class="User">'), "" != e.role && a.push("<span" + jade.attr("title", n.t("nuclearnode:userRoles." + e.role), !0, !1) + jade.cls(["UserRole_" + e.role], [!0]) + "></span> "), a.push(jade.escape(null == (t = e.displayName) ? "" : t)), a.push("</span>")
+						// Got rid of the Ban and Mod buttons from the line above
+					}.call(this, "user" in n ? n.user : "undefined" != typeof user ? user : void 0, "i18n" in n ? n.i18n : "undefined" != typeof i18n ? i18n : void 0, "app" in n ? n.app : "undefined" != typeof app ? app : void 0), a.join("")
+				}
+				// Those buttons are being rid of so we don't accidentally ban people when trying to chat
+				// A list of people that you can ban will be provided
+				
 			
 				// Chat message wrapper
 				var gameChat = channel.appendToChat;
@@ -1528,6 +1563,7 @@ var source = function() {
 
 				// This function makes the tooltip text that lists all the players in the room
 				// when you hover over the player count.
+				// Double function: construct the player list in the leaderboards tab
 				var changePlayerText = function() {
 					var playerCount = document.getElementsByClassName("ChannelUsers")[0];
 					var title = "Players:";
@@ -1535,11 +1571,65 @@ var source = function() {
 						title += "\n" + channel.data.users[i].displayName;
 					}
 					playerCount.title = title;
+					
+					// Get the playerListDiv
+					if (!(document.getElementById("PlayerList"))) {
+						var settingsTab = document.getElementById("LeaderboardTab");
+						var playerListDiv = document.createElement("DIV");
+						playerListDiv.id = "PlayerList";
+						settingsTab.appendChild(playerListDiv);
+					}
+					else {
+						var playerListDiv = document.getElementById("PlayerList");
+					}
+					
+					// Make the innerHTML
+					var PDIH = "<H2>Current Players</H2>";
+					for (var i in channel.data.users) {
+						// e is our lucky letter today
+						var e = channel.data.users[i];
+						var t = e.serviceHandles;
+						var a = [];
+						var n = i18n;
+						var r = app;
+						var l = [];
+						
+						// At this point, I kinda said eff it
+						// So we'll just use Elisee's obfuscated code because it works perfectly well
+						(function () {
+							var t = e.serviceHandles;
+							if ("number" == typeof t.length)
+								for (var a = 0, r = t.length; r > a; a++) {
+									var s = t[a];
+									null == s && (s = n.t("nuclearnode:serviceHandlePlaceholder")), "guest" != a && l.push(n.t("nuclearnode:userHandleOnService", {
+										handle: s,
+										service: n.t("nuclearnode:loginServices." + a)
+									}))
+								} else {
+									var r = 0;
+									for (var a in t) {
+										r++;
+										var s = t[a];
+										null == s && (s = n.t("nuclearnode:serviceHandlePlaceholder")), "guest" != a && l.push(n.t("nuclearnode:userHandleOnService", {
+											handle: s,
+											service: n.t("nuclearnode:loginServices." + a)
+										}))
+									}
+								}
+						})
+						 .call(this), a.push("<span" + jade.attr("title", l.join(", "), !0, !1) + jade.attr("style", "margin-left:3px;", !0, !1) + ' class="User">'), "" != e.role && a.push("<span" + jade.attr("title", n.t("nuclearnode:userRoles." + e.role), !0, !1) + jade.cls(["UserRole_" + e.role], [!0]) + "></span> "), a.push(jade.escape(null == (t = e.displayName) ? "" : t)), -1 != ["host", "hubAdministrator", "moderator"].indexOf(r.user.role) && (a.push('<span class="Actions"><button' + jade.attr("data-auth-id", e.authId, !0, !1) + jade.attr("data-display-name", e.displayName, !0, !1) + ' class="BanUser">' + jade.escape(null == (t = n.t("nuclearnode:chat.ban")) ? "" : t) + "</button>"), ("host" == r.user.role || "hubAdministrator" == r.user.role) && a.push("<button" + jade.attr("data-auth-id", e.authId, !0, !1) + jade.attr("data-display-name", e.displayName, !0, !1) + ' class="ModUser">' + jade.escape(null == (t = n.t("nuclearnode:chat.mod")) ? "" : t) + "</button>"), a.push("</span>")), a.push("</span>")
+						
+						PDIH += a.join("");
+						PDIH += "<br />";
+					}
+					
+					playerListDiv.innerHTML = PDIH;
 				};
 
 				// We want it to fire now, when a user is added, and when a users is removed.
 				channel.socket.on("addUser", changePlayerText);
 				channel.socket.on("removeUser", changePlayerText);
+				channel.socket.on("setUserRole", changePlayerText);
 				changePlayerText();
 			};
 
@@ -1554,7 +1644,7 @@ var source = function() {
 
 				// TEMP STYLESHEET TO FORMAT THE LEADERBOARDTAB THE SAME WAY AS THE SETTINGSTAB
 				var style2 = document.createElement('style');
-				style2.appendChild(document.createTextNode('#LeaderboardTab{text-align:left;overflow-y:auto}#LeaderboardTab h2{padding:.5em .5em 0;opacity:.5;-ms-filter:"alpha(Opacity=50)";filter:alpha(opacity=50)}#LeaderboardTab table{width:100%;padding:.5em}#LeaderboardTab table tr td:nth-child(1){width:40%}#LeaderboardTab table tr td:nth-child(2){width:60%}#LeaderboardTab table button:not(.UnbanUser),#LeaderboardTab table input,#LeaderboardTab table select,#LeaderboardTab table textarea{width:100%;background:#444;border:none;padding:.25em;color:#fff;font:inherit}#LeaderboardTab table textarea{resize:vertical;min-height:3em}#LeaderboardTab table ul{list-style:none}'));
+				style2.appendChild(document.createTextNode('#LeaderboardTab{text-align:left;overflow-y:auto}#LeaderboardTab h2{padding:.5em .5em 0;opacity:.5;-ms-filter:"alpha(Opacity=50)";filter:alpha(opacity=50)}#LeaderboardTab table{width:100%;padding:.5em}#LeaderboardTab table tr td:nth-child(1){width:40%}#LeaderboardTab table tr td:nth-child(2){width:60%}#LeaderboardTab table button:not(.UnbanUser),#LeaderboardTab table input,#LeaderboardTab table select,#LeaderboardTab table textarea{width:100%;background:#444;border:none;padding:.25em;color:#fff;font:inherit}#LeaderboardTab table textarea{resize:vertical;min-height:3em}#LeaderboardTab table ul{list-style:none}#LeaderboardTab .User .UserRole_hubAdministrator:before{content:\'[★]\';cursor:default;color:#c63}#LeaderboardTab .User .UserRole_host:before{content:\'★\';cursor:default;color:#dc8}#LeaderboardTab .User .UserRole_administrator:before{content:\'☆\';cursor:default;color:#dc8}#LeaderboardTab .User .UserRole_moderator:before{content:\'●\';cursor:default;color:#346192}#LeaderboardTab .Actions button{border:none;background:0 0;cursor:pointer;margin:0 .25em;outline:0;font-weight:400;font-size:smaller;opacity:.8;-ms-filter:"alpha(Opacity=80)";filter:alpha(opacity=80)}#LeaderboardTab .Actions button.BanUser{color:#a00}#LeaderboardTab .Actions button.ModUser,#LeaderboardTab .Actions button.UnmodUser{color:#2a3}#LeaderboardTab .Actions button:hover{opacity:1;-ms-filter:none;filter:none}#LeaderboardTab .Actions button:active{background:rgba(255,0,0,.2)}'));
 				document.getElementsByTagName('head')[0].appendChild(style2);
 				
 				// Load the hideDead on/off images
@@ -1735,7 +1825,7 @@ var source = function() {
 			setInterval(updateTime, 1000);
 
 			// "Update Text"
-			channel.appendToChat("Info", "New Update! (2014-12-15):<br />We found the Heisenbug!<br />Unfortunately, the cause of the bug was that the settings tab is overwritten when your user role changes.<br />As a temporary measure, to prevent the bug from happening the overlay settings are in the leaderboards tab until we work out a better solution.");
+			channel.appendToChat("Info", "New Update! (2014-12-16):<br />Removed the ban/mod buttons from the chat, and relocated them to the Leaderboard tab.");
 		}
 		main();
 	}
