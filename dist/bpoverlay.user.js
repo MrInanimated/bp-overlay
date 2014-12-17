@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         BombParty Overlay
-// @version      1.2.16
+// @version      1.2.17
 // @description  Overlay + Utilities for BombParty!
 // @icon         https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/dist/icon.png
 // @icon64       https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/dist/icon64.png
@@ -89,7 +89,10 @@ var source = function() {
 				
 				adventureFirstRun: false,
 				adventureLevels: ["A noob", "A beginner", "A novice", "A student of flips", "A graduated student of flips", "An expert flipper", "An incredible flipper", "A master flipper", "A scrub tier immortal", "A near immortal", "An immortal", "A massive flipping faggot", "A strong contender to the 'hang in there kitty'", "An immeasurable faggot of flips", "A blackhole tier faggot", "A legendary immortal faggot flipper", "A supermassive faggot with more flips than a herd of dolphins", "Silly rabbit. Flips are for kids!", "An undefeatable flipping gaylord of +5 anal strength", "An ascended immortal queen faggot cockmunch godly overlord of flips", "Zip zop zippety boop flip floop", "You're now the gayest man on earth", "Aren't you fagged out after all that flipping?", "A lifesize Johnboat", "A lifesize Catboat", "The Jesus figure in the underworld of extreme flip fetish", "On fliproids!", "Why don't you slip into something more comfortable... like a coma?", "A divine elder scrub god that manifests himself as fine-cuisine salt", "The nicest guy. Didn't expect that did you?", "Hungry hungry heart hoarder!", "A bird in the hand is worth zemstvo in the quush", "You're good. Actually very good. Goddamn", "Still going. Holy crap!", "Your Anaconda dont want none unless you got equivocations hun", "A budding plenipotentiary", "Antidisestablishmentarinism in the flesh", "Suffering from pseudopseudohypoparathyroidism", "Arrete les flips tu connard!", "A disciple of Pingu", "A man of a thousand flips... well... 40", "The god of bombparty", "Insert Douglas Adams reference here because 42 flips", "An Alpaca. Yes. An Alpaca. The flippest of animals besides giraffes", "A giraffe. The flippest of the animals in the animal kingdom", "You deserve a movie about you. The title 'Rainman' is taken though", "If faggots were mountains, you'd be a volcano!"],
-
+				
+				//The alphabet variables for alphabet hard mode				
+				alphabet: ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z"],
+				alphapos: 0,
 			};
 
 			// Adventure Mode Text formatter!
@@ -1202,6 +1205,9 @@ var source = function() {
 						if (bpOverlay.firstRun) {
 							generateActorConditions();
 
+							//reset the alphabet
+							bpOverlay.alphapos=0;
+
 
 							// Set firstRun to false so a new box is not created every time there's a turn change
 							bpOverlay.firstRun = false;
@@ -1451,6 +1457,15 @@ var source = function() {
 						bpOverlay.wordCount += 1;
 						if (bpOverlay.boxHasBeenCreated || bpOverlay.dragBoxHasBeenCreated) {
 							document.getElementById("infoWordCounter").textContent = "Word Count: " + bpOverlay.wordCount;
+						}
+
+						//Let the player get more alphabets
+						if(channel.data.actors[playerNum].displayName === window.app.user.displayName) {
+							if(bpOverlay.alphabet.length <= bpOverlay.alphapos) {
+										bpOverlay.alphapos = 0;
+									} else {
+										bpOverlay.alphapos++;
+							}
 						}
 					} finally {
 						// Call the actual game function
@@ -1749,12 +1764,57 @@ var source = function() {
 					}
 				);
 				
+				//Add the fourth button on the settingsTab that hopefully doesn't interfere with the others.
+				var sideButtons = document.getElementById("SidebarTabButtons");
+				var sideTabs    = document.getElementById("SidebarTabs");
+
+				//Make a clone of the settingstab and change it to what we want
+				var overlaySettingsTab = sideTabs.children[1].cloneNode(true);	//clone settings tab
+				overlaySettingsTab.id="overlaySettingsTab";
+				overlaySettingsTab.setAttribute("class", "");
+				overlaySettingsTab.innerHTML="";	//Empty the innerHTML
+				
+				//Make a clone of a tab button and change it to what we want
+				var overlaySettingsButton = sideButtons.children[0].cloneNode(true);	//clone whatever
+				overlaySettingsButton.id="overlaySettingsButton";
+				overlaySettingsButton.setAttribute("class", "");					//We don't want it to start active
+				overlaySettingsButton.innerHTML="BpOS";
+				overlaySettingsButton.title="Bompbarty Overlay Settings"; 
+
+				//Appendum les shittendum
+				sideButtons.appendChild(overlaySettingsButton);
+				sideTabs.appendChild(overlaySettingsTab);
+
+				//Define and activate the onclick function for our fourth button
+				function overlaySettingsFunction() {
+					for(i=0; i<=2; i++) {
+						document.getElementById("SidebarTabButtons").children[i].setAttribute("class", "");	//Prevent two active classes
+					}
+					for(i=0; i<=2; i++) {
+						document.getElementById("SidebarTabs").children[i].setAttribute("class", "");		//Prevent two active classes
+					}
+
+					document.getElementById("overlaySettingsButton").setAttribute("class", "Active");
+					document.getElementById("overlaySettingsTab").setAttribute("class", "Active");
+
+				}
+				overlaySettingsButton.onclick=overlaySettingsFunction;
+
+
+				// TEMP STYLESHEET TO FORMAT THE OVERLAYSETTINGSTAB THE SAME WAY AS THE SETTINGSTAB
+				var style2 = document.createElement('style');
+				style2.appendChild(document.createTextNode('#overlaySettingsTab{text-align:left;overflow-y:auto}#overlaySettingsTab h2{padding:.5em .5em 0;opacity:.5;-ms-filter:"alpha(Opacity=50)";filter:alpha(opacity=50)}#overlaySettingsTab table{width:100%;padding:.5em}#overlaySettingsTab table tr td:nth-child(1){width:40%}#overlaySettingsTab table tr td:nth-child(2){width:60%}#overlaySettingsTab table button:not(.UnbanUser),#overlaySettingsTab table input,#overlaySettingsTab table select,#overlaySettingsTab table textarea{width:100%;background:#444;border:none;padding:.25em;color:#fff;font:inherit}#overlaySettingsTab table textarea{resize:vertical;min-height:3em}#overlaySettingsTab table ul{list-style:none}'));
+				document.getElementsByTagName('head')[0].appendChild(style2);
+
+				
 				//We only want this once (I believe) so this is outside of a function
 				//Generate the overlay section and append it to the SettingsTab
 				var bpOverlayH2 = document.createElement("H2");
 				bpOverlayH2.textContent = "Overlay Settings";
-				var settingsTab = document.getElementById("LeaderboardTab");
+				var settingsTab = document.getElementById("overlaySettingsTab");
 				settingsTab.appendChild(bpOverlayH2);
+				
+				
 				
 				// Moved over the settings tab things to here
 				var sTabTable = document.createElement("TABLE");
@@ -1814,6 +1874,48 @@ var source = function() {
 						}
 					}
 				);
+
+				generateSettingsElement("Hard modes", {none: "None", rev: "Reverse", jqv: "J/Q/V", az: "Alphabet"}, "hardModes",
+					function() {
+						var sTabSelect = document.getElementById("hardModes");
+						if(sTabSelect.value === "rev") {
+							var wordInputBox = document.getElementById("WordInputBox");
+
+							var checkLetter = function() {
+								document.getElementById("WordInputBox").value = document.getElementById("WordInputBox").value.split("").reverse().join("");
+							}
+							wordInputBox.onchange=checkLetter;
+						} else if (sTabSelect.value === "jqv") {
+							var wordInputBox = document.getElementById("WordInputBox");
+
+							var checkLetter = function() {
+								var inValue = document.getElementById("WordInputBox").value.toLowerCase();
+								if(!((inValue.indexOf("q") > -1) || (inValue.indexOf("v") > -1) || (inValue.indexOf("j") > -1))) {
+									document.getElementById("WordInputBox").value = "This word didn't contain j, v nor q!";
+								}
+								
+							}
+							wordInputBox.onchange=checkLetter;						
+						} else if (sTabSelect.value === "az") {
+							bpOverlay.alphapos=0;
+							var wordInputBox = document.getElementById("WordInputBox");
+
+							var checkLetter = function() {
+								var inValue = document.getElementById("WordInputBox").value.toLowerCase();
+								if(!(inValue[0] === bpOverlay.alphabet[bpOverlay.alphapos])) {
+									document.getElementById("WordInputBox").value="You are on letter " + bpOverlay.alphabet[bpOverlay.alphapos] + " kappa!";
+								} 
+							}
+							
+							
+							wordInputBox.onchange=checkLetter;
+								
+						} else {
+							document.getElementById("WordInputBox").onchange="";
+						}
+					}
+				);							
+				
 				
 				// Wrap game functions, make the autoscroll/focus buttons.
 				wrapGameFunctions();
@@ -1825,7 +1927,7 @@ var source = function() {
 			setInterval(updateTime, 1000);
 
 			// "Update Text"
-			channel.appendToChat("Info", "New Update! (2014-12-16):<br />Removed the ban/mod buttons from the chat, and relocated them to the Leaderboard tab.");
+			channel.appendToChat("Info", "New Update! (2014-12-17):<br />Removed the ban/mod buttons from the chat, and relocated them to the Leaderboard tab. <br />Added hard modes in settings. New button for settings BPOS");
 		}
 		main();
 	}
