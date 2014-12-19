@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         BombParty Overlay
-// @version      1.2.17
+// @version      1.2.18
 // @description  Overlay + Utilities for BombParty!
 // @icon         https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/dist/icon.png
 // @icon64       https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/dist/icon64.png
@@ -33,7 +33,7 @@ var source = function() {
 			// Since this is running via a script loaded on page load, it's difficult ensure the overlay runs after everything has loaded
 			// This piece of code makes sure that all relevant things are loaded before executing the rest of the code
 			// We may need to add more to this long-ass if statement if we add more features in the future
-			if (!(window.hasOwnProperty("channel") && channel.socket && channel.data && channel.appendToChat && channel.socket.listeners("setActivePlayerIndex").length && channel.socket.listeners("winWord").length && channel.socket.listeners("setPlayerLives").length && channel.socket.listeners("setPlayerState").length && channel.socket.listeners("endGame").length && window.hasOwnProperty("JST") && JST["nuclearnode/chatMessage"] && document.getElementById("Sidebar") && document.getElementById("ChatLog") && document.getElementById("LeaderboardTab"))) {
+			if (!(window.hasOwnProperty("channel") && channel.socket && channel.data && channel.appendToChat && channel.socket.listeners("setActivePlayerIndex").length && channel.socket.listeners("winWord").length && channel.socket.listeners("setPlayerLives").length && channel.socket.listeners("setPlayerState").length && channel.socket.listeners("endGame").length && window.hasOwnProperty("JST") && JST["nuclearnode/chatMessage"] && document.getElementById("Sidebar") && document.getElementById("ChatLog"))) {
 				console.log("Everything's not loaded yet, trying again in a second...");
 				setTimeout(main, 1000);
 				return;
@@ -1589,7 +1589,7 @@ var source = function() {
 					
 					// Get the playerListDiv
 					if (!(document.getElementById("PlayerList"))) {
-						var settingsTab = document.getElementById("LeaderboardTab");
+						var settingsTab = document.getElementById("overlaySettingsTab");
 						var playerListDiv = document.createElement("DIV");
 						playerListDiv.id = "PlayerList";
 						settingsTab.appendChild(playerListDiv);
@@ -1654,13 +1654,8 @@ var source = function() {
 				// Probably a better way of doing this
 				// Lol. TFW web-console css is hard
 				var style = document.createElement('style');
-				style.appendChild(document.createTextNode('.headerButtonDiv {  display: -webkit-box;  display: -moz-box;  display: -webkit-flex;  display: -ms-flexbox;  display: box;  display: flex;  opacity: 0.3;  -ms-filter: "progid:DXImageTransform.Microsoft.Alpha(Opacity=30)";  filter: alpha(opacity=30);} .headerButtonDiv:hover {  opacity: 1;  -ms-filter: none;  filter: none;} button.headerButton {  border: none;  background: none;  cursor: pointer;  opacity: 0.5;  -ms-filter: "progid:DXImageTransform.Microsoft.Alpha(Opacity=50)";  filter: alpha(opacity=50);  display: -webkit-box;  display: -moz-box;  display: -webkit-flex;  display: -ms-flexbox;  display: box;  display: flex;} button.headerButton:hover {  opacity: 0.8;  -ms-filter: "progid:DXImageTransform.Microsoft.Alpha(Opacity=80)";  filter: alpha(opacity=80);} button.headerButton:active {  opacity: 1;  -ms-filter: none;  filter: none;} .infoTableDiv::-webkit-scrollbar { width: 15px; height: 15px; } .infoTableDiv::-webkit-scrollbar-button { height: 0px; width: 0px; } .infoTableDiv::-webkit-scrollbar-track { background-color: rgba(0,0,0,0.05); } .infoTableDiv::-webkit-scrollbar-thumb { background-color: rgba(255,255,255,0.1); border: 3px solid transparent; -webkit-border-radius: 6px; border-radius: 6px; -webkit-background-clip: content; -moz-background-clip: content; background-clip: content-box; } .infoTableDiv::-webkit-scrollbar-thumb:hover { background-color: rgba(255,255,255,0.15); } .infoTableDiv::-webkit-scrollbar-corner { background-color: rgba(255,255,255,0.1); }'));
+				style.appendChild(document.createTextNode('.headerButtonDiv {  display: -webkit-box;  display: -moz-box;  display: -webkit-flex;  display: -ms-flexbox;  display: box;  display: flex;  opacity: 0.3;  -ms-filter: "progid:DXImageTransform.Microsoft.Alpha(Opacity=30)";  filter: alpha(opacity=30);} .headerButtonDiv:hover {  opacity: 1;  -ms-filter: none;  filter: none;} button.headerButton {  border: none;  background: none;  cursor: pointer;  opacity: 0.5;  -ms-filter: "progid:DXImageTransform.Microsoft.Alpha(Opacity=50)";  filter: alpha(opacity=50);  display: -webkit-box;  display: -moz-box;  display: -webkit-flex;  display: -ms-flexbox;  display: box;  display: flex;} button.headerButton:hover {  opacity: 0.8;  -ms-filter: "progid:DXImageTransform.Microsoft.Alpha(Opacity=80)";  filter: alpha(opacity=80);} button.headerButton:active {  opacity: 1;  -ms-filter: none;  filter: none;} .infoTableDiv::-webkit-scrollbar { width: 15px; height: 15px; } .infoTableDiv::-webkit-scrollbar-button { height: 0px; width: 0px; } .infoTableDiv::-webkit-scrollbar-track { background-color: rgba(0,0,0,0.05); } .infoTableDiv::-webkit-scrollbar-thumb { background-color: rgba(255,255,255,0.1); border: 3px solid transparent; -webkit-border-radius: 6px; border-radius: 6px; -webkit-background-clip: content; -moz-background-clip: content; background-clip: content-box; } .infoTableDiv::-webkit-scrollbar-thumb:hover { background-color: rgba(255,255,255,0.15); } .infoTableDiv::-webkit-scrollbar-corner { background-color: rgba(255,255,255,0.1); }#overlaySettingsTab{text-align:left;overflow-y:auto}#overlaySettingsTab h2{padding:.5em .5em 0;opacity:.5;-ms-filter:"alpha(Opacity=50)";filter:alpha(opacity=50)}#overlaySettingsTab table{width:100%;padding:.5em}#overlaySettingsTab table tr td:nth-child(1){width:40%}#overlaySettingsTab table tr td:nth-child(2){width:60%}#overlaySettingsTab table button:not(.UnbanUser),#overlaySettingsTab table input,#overlaySettingsTab table select,#overlaySettingsTab table textarea{width:100%;background:#444;border:none;padding:.25em;color:#fff;font:inherit}#overlaySettingsTab table textarea{resize:vertical;min-height:3em}#overlaySettingsTab table ul{list-style:none}#overlaySettingsTab .User .UserRole_hubAdministrator:before{content:\'[★]\';cursor:default;color:#c63}#overlaySettingsTab .User .UserRole_host:before{content:\'★\';cursor:default;color:#dc8}#overlaySettingsTab .User .UserRole_administrator:before{content:\'☆\';cursor:default;color:#dc8}#overlaySettingsTab .User .UserRole_moderator:before{content:\'●\';cursor:default;color:#346192}#overlaySettingsTab .Actions button{border:none;background:0 0;cursor:pointer;margin:0 .25em;outline:0;font-weight:400;font-size:smaller;opacity:.8;-ms-filter:"alpha(Opacity=80)";filter:alpha(opacity=80)}#overlaySettingsTab .Actions button.BanUser{color:#a00}#overlaySettingsTab .Actions button.ModUser,#overlaySettingsTab .Actions button.UnmodUser{color:#2a3}#overlaySettingsTab .Actions button:hover{opacity:1;-ms-filter:none;filter:none}#overlaySettingsTab .Actions button:active{background:rgba(255,0,0,.2)}'));
 				document.getElementsByTagName('head')[0].appendChild(style);
-
-				// TEMP STYLESHEET TO FORMAT THE LEADERBOARDTAB THE SAME WAY AS THE SETTINGSTAB
-				var style2 = document.createElement('style');
-				style2.appendChild(document.createTextNode('#LeaderboardTab{text-align:left;overflow-y:auto}#LeaderboardTab h2{padding:.5em .5em 0;opacity:.5;-ms-filter:"alpha(Opacity=50)";filter:alpha(opacity=50)}#LeaderboardTab table{width:100%;padding:.5em}#LeaderboardTab table tr td:nth-child(1){width:40%}#LeaderboardTab table tr td:nth-child(2){width:60%}#LeaderboardTab table button:not(.UnbanUser),#LeaderboardTab table input,#LeaderboardTab table select,#LeaderboardTab table textarea{width:100%;background:#444;border:none;padding:.25em;color:#fff;font:inherit}#LeaderboardTab table textarea{resize:vertical;min-height:3em}#LeaderboardTab table ul{list-style:none}#LeaderboardTab .User .UserRole_hubAdministrator:before{content:\'[★]\';cursor:default;color:#c63}#LeaderboardTab .User .UserRole_host:before{content:\'★\';cursor:default;color:#dc8}#LeaderboardTab .User .UserRole_administrator:before{content:\'☆\';cursor:default;color:#dc8}#LeaderboardTab .User .UserRole_moderator:before{content:\'●\';cursor:default;color:#346192}#LeaderboardTab .Actions button{border:none;background:0 0;cursor:pointer;margin:0 .25em;outline:0;font-weight:400;font-size:smaller;opacity:.8;-ms-filter:"alpha(Opacity=80)";filter:alpha(opacity=80)}#LeaderboardTab .Actions button.BanUser{color:#a00}#LeaderboardTab .Actions button.ModUser,#LeaderboardTab .Actions button.UnmodUser{color:#2a3}#LeaderboardTab .Actions button:hover{opacity:1;-ms-filter:none;filter:none}#LeaderboardTab .Actions button:active{background:rgba(255,0,0,.2)}'));
-				document.getElementsByTagName('head')[0].appendChild(style2);
 				
 				// Load the hideDead on/off images
 				var hideDeadOn = document.createElement("img");
@@ -1799,12 +1794,6 @@ var source = function() {
 
 				}
 				overlaySettingsButton.onclick=overlaySettingsFunction;
-
-
-				// TEMP STYLESHEET TO FORMAT THE OVERLAYSETTINGSTAB THE SAME WAY AS THE SETTINGSTAB
-				var style2 = document.createElement('style');
-				style2.appendChild(document.createTextNode('#overlaySettingsTab{text-align:left;overflow-y:auto}#overlaySettingsTab h2{padding:.5em .5em 0;opacity:.5;-ms-filter:"alpha(Opacity=50)";filter:alpha(opacity=50)}#overlaySettingsTab table{width:100%;padding:.5em}#overlaySettingsTab table tr td:nth-child(1){width:40%}#overlaySettingsTab table tr td:nth-child(2){width:60%}#overlaySettingsTab table button:not(.UnbanUser),#overlaySettingsTab table input,#overlaySettingsTab table select,#overlaySettingsTab table textarea{width:100%;background:#444;border:none;padding:.25em;color:#fff;font:inherit}#overlaySettingsTab table textarea{resize:vertical;min-height:3em}#overlaySettingsTab table ul{list-style:none}'));
-				document.getElementsByTagName('head')[0].appendChild(style2);
 
 				
 				//We only want this once (I believe) so this is outside of a function
