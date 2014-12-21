@@ -9,7 +9,16 @@
 // @match        http://bombparty.sparklinlabs.com/play/*
 // @resource     twitch_global http://twitchemotes.com/global.json
 // @resource     twitch_subscriber http://twitchemotes.com/subscriber.json
+// @resource     autoScrollOn https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/dist/chatdown.png
+// @resource     autoScrollOff https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/dist/chatdownoff.png
+// @resource     autoFocusOn https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/dist/focusOn.png
+// @resource     autoFocusOff https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/dist/focusOff.png
+// @resource     dragOff https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/dist/dragOff.png
+// @resource     dragOn https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/dist/dragOn.png
+// @resource     hideDeadOn https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/dist/hideDeadOn.png
+// @resource     hideDeadOff https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/dist/hideDeadOff.png
 // @grant        GM_getResourceText
+// @grant        GM_getResourceURL
 // ==/UserScript==
 
 
