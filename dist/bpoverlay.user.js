@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         BombParty Overlay
-// @version      1.2.20
+// @version      1.2.21
 // @description  Overlay + Utilities for BombParty!
 // @icon         https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/dist/icon.png
 // @icon64       https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/dist/icon64.png
@@ -1937,7 +1937,7 @@ var source = function() {
 					}
 				);
 
-				generateSettingsElement("Hard modes", {none: "None", rev: "Reverse", jqv: "J/Q/V", az: "Alphabet"}, "hardModes",
+				generateSettingsElement("Hard modes", {none: "None", rev: "Reverse", jqv: "J/Q/V", az: "Alphabet", xz: "X/Z"}, "hardModes",
 					function() {
 						var sTabSelect = document.getElementById("hardModes");
 						if(sTabSelect.value === "rev") {
@@ -1968,8 +1968,17 @@ var source = function() {
 									document.getElementById("WordInputBox").value="You are on letter " + bpOverlay.alphabet[bpOverlay.alphapos] + " kappa!";
 								} 
 							}
-							
-							
+							wordInputBox.onchange=checkLetter;
+						} else if (sTabSelect.value === "xz") {
+							var wordInputBox = document.getElementById("WordInputBox");
+
+							var checkLetter = function() {
+								var inValue = document.getElementById("WordInputBox").value.toLowerCase();
+								if(!((inValue.indexOf("x") > -1) || (inValue.indexOf("z") > -1))) {
+									document.getElementById("WordInputBox").value = "This word didn't contain x nor z!";
+								}
+								
+							}
 							wordInputBox.onchange=checkLetter;
 								
 						} else {
@@ -1989,7 +1998,7 @@ var source = function() {
 			setInterval(updateTime, 1000);
 
 			// "Update Text"
-			channel.appendToChat("Info", "New Update! (2014-12-21):<br />Minor Update: All the images are now cached, so in the unlikely event that GitHub goes down, you'll still be able to see your buttons.");
+			channel.appendToChat("Info", "New Update! (2014-12-21):<br />Minor Update: All the images are now cached, so in the unlikely event that GitHub goes down, you'll still be able to see your buttons.<br />X/Z mode added to hard modes.");
 		}
 		main();
 	}
