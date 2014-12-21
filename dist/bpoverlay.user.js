@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         BombParty Overlay
-// @version      1.2.18
+// @version      1.2.19
 // @description  Overlay + Utilities for BombParty!
 // @icon         https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/dist/icon.png
 // @icon64       https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/dist/icon64.png
@@ -9,9 +9,17 @@
 // @match        http://bombparty.sparklinlabs.com/play/*
 // @resource     twitch_global http://twitchemotes.com/global.json
 // @resource     twitch_subscriber http://twitchemotes.com/subscriber.json
+// @resource     autoScrollOn https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/dist/chatdown.png
+// @resource     autoScrollOff https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/dist/chatdownoff.png
+// @resource     autoFocusOn https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/dist/focusOn.png
+// @resource     autoFocusOff https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/dist/focusOff.png
+// @resource     dragOff https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/dist/dragOff.png
+// @resource     dragOn https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/dist/dragOn.png
+// @resource     hideDeadOn https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/dist/hideDeadOn.png
+// @resource     hideDeadOff https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/dist/hideDeadOff.png
 // @grant        GM_getResourceText
+// @grant        GM_getResourceURL
 // ==/UserScript==
-
 
 // Grab the twitch emotes
 var tg = GM_getResourceText("twitch_global");
@@ -19,7 +27,19 @@ var ts = GM_getResourceText("twitch_subscriber");
 
 var te = document.createElement('script');
 te.setAttribute("type", "application/javascript");
-te.textContent = 'var twitch_global = ' + tg + '; var twitch_subscriber = ' + ts + ';';
+te.textContent = '\
+var twitch_global = ' + tg + ';\
+var twitch_subscriber = ' + ts + ';\
+var bpImgUrls = {\
+	autoScrollOn : "' + GM_getResourceURL("autoScrollOn") + '",\
+	autoScrollOff : "' + GM_getResourceURL("autoScrollOff") + '",\
+	autoFocusOn : "' + GM_getResourceURL("autoFocusOn") + '",\
+	autoFocusOff : "' + GM_getResourceURL("autoFocusOff") + '",\
+	dragOff : "' + GM_getResourceURL("dragOff") + '",\
+	dragOn : "' + GM_getResourceURL("dragOn") + '",\
+	hideDeadOn : "' + GM_getResourceURL("hideDeadOn") + '",\
+	hideDeadOff : "' + GM_getResourceURL("hideDeadOff") + '",\
+};';
 document.body.appendChild(te);
 document.body.removeChild(te);
 
@@ -292,42 +312,42 @@ var source = function() {
 				on: imgNodeConstructor(document.createElement("img"), {
 					width: 30,
 					height: 30,
-					src: "https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/dist/chatdown.png",
+					src: bpImgUrls.autoScrollOn,
 				}),
 
 				//AutoScroll button off state
 				off: imgNodeConstructor(document.createElement("img"), {
 					width: 30,
 					height: 30,
-					src: "https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/dist/chatdownoff.png",
+					src: bpImgUrls.autoScrollOff,
 				}),
 
 				//AutoFocus button on state
 				autoFocusOn: imgNodeConstructor(document.createElement("img"), {
 					width: 30,
 					height: 30,
-					src: "https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/dist/focusOn.png",
+					src: bpImgUrls.autoFocusOn,
 				}),
 
 				//AutoFocus button off state
 				autoFocusOff: imgNodeConstructor(document.createElement("img"), {
 					width: 30,
 					height: 30,
-					src: "https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/dist/focusOff.png",
+					src: bpImgUrls.autoFocusOff,
 				}),
 
 				//Dragon button off state
 				dragOff: imgNodeConstructor(document.createElement("img"), {
 					width: 30,
 					height: 30,
-					src: "https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/dist/dragOff.png",
+					src: bpImgUrls.dragOff,
 				}),
 
 				//Dragon button on state                
 				dragOn: imgNodeConstructor(document.createElement("img"), {
 					width: 30,
 					height: 30,
-					src: "https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/dist/dragOn.png",
+					src: bpImgUrls.dragOn,
 				}),
 
 				//These buttons not constructed because they appear solidary and have already been coded with the old method
@@ -1661,13 +1681,13 @@ var source = function() {
 				var hideDeadOn = document.createElement("img");
 				hideDeadOn.width = 15;
 				hideDeadOn.height = 15;
-				hideDeadOn.src = "https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/dist/hideDeadOn.png";
+				hideDeadOn.src = bpImgUrls.hideDeadOn;
 				bpOverlayImgs.hideDeadOn = hideDeadOn;
 
 				var hideDeadOff = document.createElement("img");
 				hideDeadOff.width = 15;
 				hideDeadOff.height = 15;
-				hideDeadOff.src = "https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/dist/hideDeadOff.png";
+				hideDeadOff.src = bpImgUrls.hideDeadOff;
 				bpOverlayImgs.hideDeadOff = hideDeadOff;
 
 				//AutoScrollButton made with makeHeaderButton Function
@@ -1916,7 +1936,7 @@ var source = function() {
 			setInterval(updateTime, 1000);
 
 			// "Update Text"
-			channel.appendToChat("Info", "New Update! (2014-12-17):<br />Removed the ban/mod buttons from the chat, and relocated them to the Leaderboard tab. <br />Added hard modes in settings. New button for settings BPOS");
+			channel.appendToChat("Info", "New Update! (2014-12-21):<br />Minor Update: All the images are now cached, so in the unlikely event that GitHub goes down, you'll still be able to see your buttons.");
 		}
 		main();
 	}
