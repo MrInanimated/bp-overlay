@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         BombParty Overlay
-// @version      1.2.19
+// @version      1.2.20
 // @description  Overlay + Utilities for BombParty!
 // @icon         https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/dist/icon.png
 // @icon64       https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/dist/icon64.png
@@ -43,6 +43,8 @@ var bpImgUrls = {\
 document.body.appendChild(te);
 document.body.removeChild(te);
 
+// All the code written within this function RUNS WITHIN THE SCOPE OF THE PAGE.
+// Everything outside it do NOT have access to environment variables.
 var source = function() {
 	// If the window already has a BPOverlay, don't run again
 	if (window.hasOwnProperty('BPOverlayHasRun')) {} else {
@@ -1619,7 +1621,7 @@ var source = function() {
 					}
 					
 					// Make the innerHTML
-					var PDIH = "<H2>Current Players</H2>";
+					var PDIH = "";
 					for (var i in channel.data.users) {
 						// e is our lucky letter today
 						var e = channel.data.users[i];
@@ -1652,7 +1654,7 @@ var source = function() {
 									}
 								}
 						})
-						 .call(this), a.push("<span" + jade.attr("title", l.join(", "), !0, !1) + jade.attr("style", "margin-left:3px;", !0, !1) + ' class="User">'), "" != e.role && a.push("<span" + jade.attr("title", n.t("nuclearnode:userRoles." + e.role), !0, !1) + jade.cls(["UserRole_" + e.role], [!0]) + "></span> "), a.push(jade.escape(null == (t = e.displayName) ? "" : t)), -1 != ["host", "hubAdministrator", "moderator"].indexOf(r.user.role) && (a.push('<span class="Actions"><button' + jade.attr("data-auth-id", e.authId, !0, !1) + jade.attr("data-display-name", e.displayName, !0, !1) + ' class="BanUser">' + jade.escape(null == (t = n.t("nuclearnode:chat.ban")) ? "" : t) + "</button>"), ("host" == r.user.role || "hubAdministrator" == r.user.role) && a.push("<button" + jade.attr("data-auth-id", e.authId, !0, !1) + jade.attr("data-display-name", e.displayName, !0, !1) + ' class="ModUser">' + jade.escape(null == (t = n.t("nuclearnode:chat.mod")) ? "" : t) + "</button>"), a.push("</span>")), a.push("</span>")
+						 .call(this), a.push("<span" + jade.attr("title", l.join(", "), !0, !1) + ' class="User">'), "" != e.role && a.push("<span" + jade.attr("title", n.t("nuclearnode:userRoles." + e.role), !0, !1) + jade.cls(["UserRole_" + e.role], [!0]) + "></span> "), a.push(jade.escape(null == (t = e.displayName) ? "" : t)), -1 != ["host", "hubAdministrator", "moderator"].indexOf(r.user.role) && (a.push('<span class="Actions"><button' + jade.attr("data-auth-id", e.authId, !0, !1) + jade.attr("data-display-name", e.displayName, !0, !1) + ' class="BanUser">' + jade.escape(null == (t = n.t("nuclearnode:chat.ban")) ? "" : t) + "</button>"), ("host" == r.user.role || "hubAdministrator" == r.user.role) && a.push("<button" + jade.attr("data-auth-id", e.authId, !0, !1) + jade.attr("data-display-name", e.displayName, !0, !1) + ' class="ModUser">' + jade.escape(null == (t = n.t("nuclearnode:chat.mod")) ? "" : t) + "</button>"), a.push("</span>")), a.push("</span>")
 						
 						PDIH += a.join("");
 						PDIH += "<br />";
@@ -1744,6 +1746,12 @@ var source = function() {
 					false,
 					function() {
 						//We don't want the button to react if the neither of the boxes have been created
+						
+						// Well, because generateActorConditions checks bpOverlay.dragOn, I don't think it matters anymore
+						// So I'm just going to override it :P (no offense)
+						// This is in preparation for saving settings across bombparty sessions
+						// Because if the user was to prefer the drag box, that should be the default
+						// Which means it bpOverlay.dragOn needs to be true from the get-go
 						if (bpOverlay.boxHasBeenCreated || bpOverlay.dragBoxHasBeenCreated) {
 							bpOverlay.dragonDrop = !bpOverlay.dragonDrop; //Flippety flop the boolean be bop
 
@@ -1774,7 +1782,23 @@ var source = function() {
 								button.appendChild(bpOverlayImgs.dragOff);
 							}
 						} else {
-							alert("Didn't find the infoBox.\n\nIf you're running this for the first time and the round hasn't started or if it's the same player's turn from when you started the overlay then this is normal.\n\nYou impatient flap :D");
+							// The subverting begins
+							bpOverlay.dragonDrop = !bpOverlay.dragonDrop; //Flippety flop the boolean be bop
+
+							var button = document.getElementById("dragButton");
+							
+							if (bpOverlay.dragonDrop) {
+
+								button.removeChild(bpOverlayImgs.dragOff);
+								button.appendChild(bpOverlayImgs.dragOn);
+
+							} else {
+
+								button.removeChild(bpOverlayImgs.dragOn);
+								button.appendChild(bpOverlayImgs.dragOff);
+							}
+						
+							//alert("Didn't find the infoBox.\n\nIf you're running this for the first time and the round hasn't started or if it's the same player's turn from when you started the overlay then this is normal.\n\nYou impatient flap :D");
 						}
 					}
 				);
@@ -1830,6 +1854,35 @@ var source = function() {
 				sTabTable.id = "overlaySettingsTable";
 				settingsTab.appendChild(sTabTable);
 
+				// Might as well have the current players in here
+				var playerListH2 = document.createElement("H2");
+				playerListH2.textContent = "Current Players";
+				settingsTab.appendChild(playerListH2);
+				
+				var playerListDiv = document.createElement("DIV");
+				playerListDiv.id = "PlayerList";
+				playerListDiv.style.marginLeft = "8px";
+				settingsTab.appendChild(playerListDiv);
+				
+				// A little attribution table
+				var creditsH2 = document.createElement("H2");
+				creditsH2.textContent = "Credits";
+				settingsTab.appendChild(creditsH2);
+				
+				var creditsTable = document.createElement("TABLE");
+				creditsTable.id = "creditsTable";
+				creditsTable.innerHTML = "\
+				<tr><td>Code Monkey</td><td>MrInanimated</td></tr>\
+				<tr><td>Code Master</td><td>Skandalabrandur</td></tr>\
+				<tr><td>Autolinker</td><td><a href=\"https://github.com/gregjacobs/Autolinker.js\">Autolinker.js</a></td></tr>\
+				<tr><td>Twitch Emotes</td><td><a href=\"http://twitchemotes.com/\">twitchemotes.com</a></td></tr>";
+				settingsTab.appendChild(creditsTable);
+				
+				var creditsText = document.createElement("DIV");
+				creditsText.textContent = "With thanks to the English BombParty community";
+				creditsText.style.marginLeft = "8px";
+				settingsTab.appendChild(creditsText);
+				
 				generateSettingsElement("Container Size", {compact: "Compact size", fitToPlayers: "Fit To Players"}, "containerSelect", 
 					function () {
 						//Get the infoTableDiv element and the selector created with the id 'containerSelect'
