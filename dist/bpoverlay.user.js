@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         BombParty Overlay
-// @version      1.2.21
+// @version      1.3.0
 // @description  Overlay + Utilities for BombParty!
 // @icon         https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/dist/icon.png
 // @icon64       https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/dist/icon64.png
@@ -115,8 +115,49 @@ var source = function() {
 				//The alphabet variables for alphabet hard mode				
 				alphabet: ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z"],
 				alphapos: 0,
+				
+				christmas: false,  //christmas mode
+				snowflakeSpawnRate: 0.025,  // chance that a snoflake is spawned every frame
 			};
-
+			
+			// Store all the game images so they can be changed
+			gameImages = {};
+			
+			// So, um, the code here is pretty distributed, but I'll explain the "hack" I've found here
+			// Elisee has *kindly* wrapped up all the images he used in a closure
+			// (I totally didn't spend about 3 hours hunting how to do this before finding this hack)
+			// Which means there's normally no way to get at those images and change them
+			// The one point of contact those variables have with the outside environment is the context.drawImage method
+			// So of course that's exploited.
+			// Now, not all the images will be sent to drawImage at once
+			// Hence the need for a missing game images list.
+			var missingGameImgs = [
+				"avatarShadow",
+				"heart",
+				"heartEmpty",
+				"arrow",
+				"bomb",
+				"sparkle",
+				"avatarPlaceHolder",
+				"letter",
+			]
+			
+			// Relacement src's go here
+			var replacementImages = {
+				bomb: "https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/themes/xmas/Bomb.png",
+				arrow: "https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/themes/xmas/Arrow.png",
+				heart: "https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/themes/xmas/Heart.png",
+				heartEmpty: "https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/themes/xmas/HeartEmpty.png",
+			};
+			
+			// This is a backup of the original src's of the images
+			// So if ever need to flip back to the default
+			// We use the src's listed here
+			var backupSources = {
+			};
+			
+			var canvasContext = document.getElementById("GameCanvas").getContext("2d");
+			
 			// Adventure Mode Text formatter!
 			// Use this to have a pool of text messages to randomly choose from. 
 			
@@ -691,6 +732,188 @@ var source = function() {
 			//////////////////////////////////////////////
 			//END functions for the adventure text thing
 
+			// It's my turn to write a long completely unnecessary feature!
+			//////////////////////////////////////////////
+			var snowflakeArray = [];  // An array for snowflakes.
+			                          // Shut up, this is totally normal.
+			var snowflakeImgs = [];   // An array for storing snowflakes.
+			                          // Totally different.
+			var rafID;                // For storing the ID for requestAnimationFrame, so we can stop it
+			
+			// Fill up the snowflakeImgs
+			for (i = 0; i < 7; i++) {
+				snowflakeImgs.push(imgNodeConstructor(document.createElement("img"), {
+					src: "https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/themes/xmas/snowflake" + i + ".png"
+				}));
+			}
+			
+			// Bleh, it turns out that browsers haven't completely agreed on a single function for requestAnimationFrame/cancelAnimationFrame
+			var requestAnimationFrame = window.requestAnimationFrame || window.mozRequestAnimationFrame || window.webkitRequestAnimationFrame || window.msRequestAnimationFrame;
+			var cancelAnimationFrame = window.cancelAnimationFrame || window.mozCancelAnimationFrame;
+			
+			toggleChristmas = function (toggle) {
+				if (toggle && !bpOverlay.christmas) {
+					bpOverlay.christmas = true;
+				
+					// Them christmas styles
+					var style = document.createElement('style');
+					style.id = "christmasStyles";
+					style.appendChild(document.createTextNode('#App{background:url(https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/themes/xmas/snow_backdrop.png),radial-gradient(ellipse,#016cbe,#01266c),#016cbe;background-repeat:repeat-x;background-position:center bottom}#App>header{background:-webkit-linear-gradient(top,rgba(60,60,128,.4) 0,rgba(60,60,128,.4) 100%);background:-moz-linear-gradient(top,rgba(60,60,128,.4) 0,rgba(60,60,128,.4) 100%);background:-o-linear-gradient(top,rgba(60,60,128,.4) 0,rgba(60,60,128,.4) 100%);background:-ms-linear-gradient(top,rgba(60,60,128,.4) 0,rgba(60,60,128,.4) 100%);background:linear-gradient(to bottom,rgba(60,60,128,.4) 0,rgba(60,60,128,.4) 100%)}# App>main{border-top:0}'));
+					document.getElementsByTagName('head')[0].appendChild(style);
+					
+					// Grab the canvas and its context
+					var canvas = document.getElementById("GameCanvas");
+					var ctx = canvas.getContext("2d");
+					
+					var lastTime = (new Date).getTime();
+					
+					var spawnSnowflake = function () {
+						var size = Math.random() * 0.4 + 0.8;
+						snowflakeArray.push({
+							imageId: Math.floor(Math.random() * snowflakeImgs.length),
+							size: size,
+							position: {x: Math.random() * canvas.width, y: -100},
+							velocity: {x: 0, y: (size - 0.8) * 2.5 * 100 + 10},
+							rotation: Math.random() * Math.PI * 2,
+							angularVelocity: Math.random() * 2 - 1,
+						});
+					}
+					
+					// Actual function used for drawing the snowflakes
+					snowflakeAnimate = function () {
+						// Make a new snowflake
+						if (Math.random() < bpOverlay.snowflakeSpawnRate) {
+							spawnSnowflake();
+						}
+						
+						// Time params
+						var current = (new Date).getTime();
+						var dt = Math.min((current - lastTime) / 1000, 1);
+						lastTime = current;
+						
+						// Euh, reset the scaling
+						ctx.setTransform(1, 0, 0, 1, 0, 0);
+						
+						// Loop through all the snowflakes
+						// We're looping backwards because we want to be able to remove snowflakes
+						// Without messing up list indices
+						for (snowflakeID = snowflakeArray.length - 1; snowflakeID >= 0; snowflakeID--) {
+							var snowflake = snowflakeArray[snowflakeID];
+							var img = snowflakeImgs[snowflake.imageId];
+							
+							// Update its parameters
+							snowflake.position.x += snowflake.velocity.x * dt;
+							snowflake.position.y += snowflake.velocity.y * dt;
+							snowflake.rotation += snowflake.angularVelocity * dt;
+							snowflake.rotation %= Math.PI * 2;
+							
+							var width = img.width * snowflake.size;
+							var height = img.height * snowflake.size;
+							
+							// Draw the snowflake
+							// Apparently, to rotate things, you have to transform the entire canvas context
+							ctx.translate(snowflake.position.x, snowflake.position.y);
+							ctx.rotate(snowflake.rotation);
+							ctx.drawImage(img, -width/2, -height/2, width, height);
+							ctx.rotate(-snowflake.rotation);
+							ctx.translate(-snowflake.position.x, -snowflake.position.y);
+							
+							
+							// Remove the snowflake if necessary
+							if (snowflake.position.y - Math.max(width, height) > canvas.height ||
+							    Math.abs(snowflake.position.x - canvas.width / 2) < 100 ||
+								snowflake.position.x + width/2 > canvas.width - Math.min(100, canvas.height / 11 * 2)) {
+								snowflakeArray.splice(snowflakeID, 1);
+							}
+						}
+						
+						// Request it again so 
+						rafID = requestAnimationFrame(snowflakeAnimate);
+					}
+					
+					ctx.fillTextRedux = ctx.fillText;
+					ctx.fillText = function () {
+						var tc = ctx.shadowColor;
+						var tb = ctx.shadowBlur;
+
+						if (ctx.fillStyle !== "#404040") {
+							ctx.shadowColor="#000";
+							ctx.shadowBlur=10;
+						}
+						
+						switch (ctx.fillStyle) {
+							case "#cccccc":
+								ctx.fillStyle = "#ddd";
+								break;
+							case "#a0a0a0":
+								ctx.fillStyle = "#c0c0c0";
+								break;
+							case "#60aa60":
+								ctx.fillStyle = "#80cc80";
+								break;
+							case "#404040":
+								ctx.fillStyle = "#335";
+								break;
+						}
+						
+						ctx.fillTextRedux.apply(this, arguments);
+						
+						ctx.shadowColor=tc;
+						ctx.shadowBlur=tb;
+					};
+					
+					snowflakeAnimate();
+					
+					for (var i in gameImages) {
+						replaceImage(i);
+					}
+					
+				}
+				else if (!toggle && bpOverlay.christmas) {
+					bpOverlay.christmas = false;
+				
+					// Get rid of the chrismtas style sheet if there is one
+					if (style = document.getElementById("christmasStyles")) {
+						style.parentNode.removeChild(style);
+					}
+					
+					// Cancel the snowflake animation
+					if (rafID !== undefined) {
+						cancelAnimationFrame(rafID);
+						rafID = undefined;
+					}
+					
+					var ctx = document.getElementById("GameCanvas").getContext("2d");
+					
+					if (ctx.fillTextRedux) {
+						ctx.fillText = ctx.fillTextRedux;
+					}
+					
+					for (var i in gameImages) {
+						unreplaceImage(i);
+					}
+				}
+			};
+			
+			// Replace image function
+			// Call this when a new image is being drawn or when christmas mode is being activated
+			var replaceImage = function (imageName) {
+				if (replacementImages[imageName]) {
+					gameImages[imageName].src = replacementImages[imageName];
+				}
+			};
+			
+			// Replace the images back with the originals
+			// Call when christmas mode is deactivated
+			var unreplaceImage = function (imageName) {
+				if (backupSources[imageName]) {
+					gameImages[imageName].src = backupSources[imageName];
+				}
+			};
+			
+			//////////////////////////////////////////////
+			// END of most of the christmas code
+			
 			// This function is called whenever a new round begins.
 			var generateActorConditions = function() {
 				// If there is already a box, get rid of it
@@ -1139,6 +1362,33 @@ var source = function() {
 			// We wrap the default game functions to force them to be called after our custom code.
 			var wrapGameFunctions = function() {
 
+				// A little wrapper thing to make the canvas fill up the gameImages object
+				var ctx = canvasContext;
+				ctx.drawImageRedux = ctx.drawImage; // Do a little wrapping
+				ctx.drawImage = function () {
+					for (i = 0; i < missingGameImgs.length; i++) {
+						if (arguments[0].src.toLowerCase().indexOf("/images/" + missingGameImgs[i].toLowerCase() + ".png") != -1) {
+							// Fill up gameImages
+							gameImages[missingGameImgs[i]] = arguments[0];
+							backupSources[missingGameImgs[i]] = arguments[0].src;
+							if (bpOverlay.christmas) {
+								replaceImage(missingGameImgs[i]);
+							}
+							
+							missingGameImgs.splice(i, 1);
+							break;
+						}
+					}
+				
+					// reset this function back after it's done its job
+					if (missingGameImgs.length === 0) {
+						ctx.drawImage = ctx.drawImageRedux;
+					}
+				
+					// Of course, we need to call the actual function first
+					return ctx.drawImageRedux.apply(this, arguments);
+				};
+			
 				// Screw your function for handling chat messages, Elisee
 				// I'm going to make a better one! With blackjack! And hookers!
 				JST["nuclearnode/chatMessage"] = function (e) {
@@ -1987,18 +2237,53 @@ var source = function() {
 					}
 				);							
 				
+				// Only activate after the 24th, and then don't be automatic from Jan 6th
+				if ((new Date) > (new Date("Dec 24 2014"))) {
+					generateSettingsElement("Christmas", {on: "On", off: "Off"}, "christmasSelect",
+						function () {
+							var sTabSelect = document.getElementById("christmasSelect");
+							if(sTabSelect.value === "on") {
+								toggleChristmas(true);
+							} else if(sTabSelect.value === "off") {
+								toggleChristmas(false);
+							} else {
+								toggleChristmas(false);
+							}
+						}
+					);
+					
+					if ((new Date) > (new Date("Jan 6 2014"))) {
+						document.getElementById("christmasSelect").value = "off";
+					}
+					else {
+						toggleChristmas(true);
+					}
+					
+					generateSettingsElement("Snowflakes", {high: "High", low: "Low", off: "Off"}, "snowflakesSelect",
+						function () {
+							var sTabSelect = document.getElementById("snowflakesSelect");
+							if(sTabSelect.value === "high") {
+								bpOverlay.snowflakeSpawnRate = 0.025;
+							} else if(sTabSelect.value === "low") {
+								bpOverlay.snowflakeSpawnRate = 0.008;
+							} else {
+								bpOverlay.snowflakeSpawnRate = 0;
+							}
+						}
+					);
+				}
 				
 				// Wrap game functions, make the autoscroll/focus buttons.
 				wrapGameFunctions();
 			}
 			
 			firstRunProcs();
-
+			
 			// Make updateTime fire every second.
 			setInterval(updateTime, 1000);
 
 			// "Update Text"
-			channel.appendToChat("Info", "New Update! (2014-12-21):<br />Minor Update: All the images are now cached, so in the unlikely event that GitHub goes down, you'll still be able to see your buttons.<br />X/Z mode added to hard modes.");
+			channel.appendToChat("Info", "New Update! (2014-12-23):<br />Merry Christmas and a Happy New Year!");
 		}
 		main();
 	}
