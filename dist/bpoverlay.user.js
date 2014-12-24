@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         BombParty Overlay
-// @version      1.3.0
+// @version      1.3.1
 // @description  Overlay + Utilities for BombParty!
 // @icon         https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/dist/icon.png
 // @icon64       https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/dist/icon64.png
@@ -2252,7 +2252,7 @@ var source = function() {
 						}
 					);
 					
-					if ((new Date) > (new Date("Jan 6 2014"))) {
+					if ((new Date) > (new Date("Jan 6 2015"))) {
 						document.getElementById("christmasSelect").value = "off";
 					}
 					else {
