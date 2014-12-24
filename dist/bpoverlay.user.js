@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         BombParty Overlay
-// @version      1.3.1
+// @version      1.3.2
 // @description  Overlay + Utilities for BombParty!
 // @icon         https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/dist/icon.png
 // @icon64       https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/dist/icon64.png
@@ -19,6 +19,8 @@
 // @resource     hideDeadOff https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/dist/hideDeadOff.png
 // @grant        GM_getResourceText
 // @grant        GM_getResourceURL
+// @grant        GM_getValue
+// @grant        GM_setValue
 // ==/UserScript==
 
 // Grab the twitch emotes
@@ -1275,8 +1277,10 @@ var source = function() {
 				//Depending on defaultState, have the button start with the "on" image or the "off"
 				if (defaultState) {
 					button.appendChild(onSrc);
+					button.dataset.state = true;  // Turns out, data attributes are pretty useful in storing state
 				} else {
 					button.appendChild(offSrc);
+					button.dataset.state = false;
 				}
 
 				buttonDiv.appendChild(button);
@@ -1958,10 +1962,12 @@ var source = function() {
 							// if autoScroll is true, remove the off image and add the on image...
 							document.getElementById("chatDownButton").removeChild(bpOverlayImgs.off);
 							document.getElementById("chatDownButton").appendChild(bpOverlayImgs.on);
+							document.getElementById("chatDownButton").dataset.state = true;
 						} else {
 							// ...and vice versa if autoScroll is false
 							document.getElementById("chatDownButton").removeChild(bpOverlayImgs.on);
 							document.getElementById("chatDownButton").appendChild(bpOverlayImgs.off);
+							document.getElementById("chatDownButton").dataset.state = false;
 						}
 					}
 				);
@@ -1980,10 +1986,12 @@ var source = function() {
 							// You must know the drill by now
 							document.getElementById("autoFocusButton").removeChild(bpOverlayImgs.autoFocusOff);
 							document.getElementById("autoFocusButton").appendChild(bpOverlayImgs.autoFocusOn);
+							document.getElementById("autoFocusButton").dataset.state = true;
 						} else {
 							// I'm not even going to bother
 							document.getElementById("autoFocusButton").removeChild(bpOverlayImgs.autoFocusOn);
 							document.getElementById("autoFocusButton").appendChild(bpOverlayImgs.autoFocusOff);
+							document.getElementById("autoFocusButton").dataset.state = false;
 						}
 					}
 				);
@@ -2020,7 +2028,7 @@ var source = function() {
 								button.appendChild(bpOverlayImgs.dragOn);
 								bpOverlay.dragBoxHasBeenCreated = true;
 								bpOverlay.boxHasBeenCreated = false;
-
+								button.dataset.state = true;
 							} else {
 
 								dragOnDrop.removeChild(infoBox);
@@ -2030,6 +2038,7 @@ var source = function() {
 
 								button.removeChild(bpOverlayImgs.dragOn);
 								button.appendChild(bpOverlayImgs.dragOff);
+								button.dataset.state = false;
 							}
 						} else {
 							// The subverting begins
@@ -2041,11 +2050,14 @@ var source = function() {
 
 								button.removeChild(bpOverlayImgs.dragOff);
 								button.appendChild(bpOverlayImgs.dragOn);
-
+								button.dataset.state = true;
+								
 							} else {
 
 								button.removeChild(bpOverlayImgs.dragOn);
 								button.appendChild(bpOverlayImgs.dragOff);
+								button.dataset.state = false;
+								
 							}
 						
 							//alert("Didn't find the infoBox.\n\nIf you're running this for the first time and the round hasn't started or if it's the same player's turn from when you started the overlay then this is normal.\n\nYou impatient flap :D");
@@ -2139,18 +2151,22 @@ var source = function() {
 						var infoTableDiv = document.getElementsByClassName("infoTableDiv")[0];
 						var sTabSelect = document.getElementById("containerSelect");
 						
-						//Change container.style.maxHeight depending on user choice
-						if(sTabSelect.value === "compact") {
-							infoTableDiv.style.maxHeight = "100px";					
-						} else if (sTabSelect.value === "fitToPlayers") {
-							infoTableDiv.style.maxHeight = "1000px";	//The autoflow whatever takes care of this.
+						// Enclosed this in an if in case those were not created
+						if (infoTableDiv && sTabSelect) {
+						
+							//Change container.style.maxHeight depending on user choice
+							if(sTabSelect.value === "compact") {
+								infoTableDiv.style.maxHeight = "100px";					
+							} else if (sTabSelect.value === "fitToPlayers") {
+								infoTableDiv.style.maxHeight = "1000px";	//The autoflow whatever takes care of this.
 
-							//Prevent flowing out of page
-							//Let's be lazy and get the window.onresize and run it.
-							var funky = window.onresize;
-							funky();
-						} else {
-							//Do nothing
+								//Prevent flowing out of page
+								//Let's be lazy and get the window.onresize and run it.
+								var funky = window.onresize;
+								funky();
+							} else {
+								//Do nothing
+							}
 						}
 
 					}
@@ -2283,7 +2299,7 @@ var source = function() {
 			setInterval(updateTime, 1000);
 
 			// "Update Text"
-			channel.appendToChat("Info", "New Update! (2014-12-23):<br />Merry Christmas and a Happy New Year!");
+			channel.appendToChat("Info", "New Update! (2014-12-24):<br />Merry Christmas and a Happy New Year!<br />Persistent settings: Settings should now save over sessions.");
 		}
 		main();
 	}
@@ -2296,3 +2312,88 @@ s.textContent = '(' + source + ')();';
 document.body.appendChild(s);
 document.body.removeChild(s);
 
+// This code attaches listeners to relevant settings objects to make them persistent
+
+// Process to attach to things in the DOM from the sandboxed environment
+// This needs to happen in this environment because I need access to the GM functions
+var attachToSettings = function () {
+	if (!(document.getElementById("containerSelect") && document.getElementById("twitchEmoteSelect") && document.getElementById("adventureSetting") && document.getElementById("chatDownButton") && document.getElementById("autoFocusButton") && document.getElementById("dragButton"))) {
+		setTimeout(attachToSettings, 1000);
+	}
+	else {
+		// Whoo look at them variables
+		var cs = document.getElementById("containerSelect");
+		var tes = document.getElementById("twitchEmoteSelect");
+		var as = document.getElementById("adventureSetting");
+		var cdb = document.getElementById("chatDownButton");
+		var afb = document.getElementById("autoFocusButton");
+		var db = document.getElementById("dragButton");
+		
+		var loadAndChangeSelect = function (element, valueName, defaultValue) {
+			if (GM_getValue(valueName, defaultValue) !== element.value) {
+				element.value = GM_getValue(valueName, defaultValue);
+				var event = new Event("change");
+				element.dispatchEvent(event);
+			}
+		}
+		
+		var loadAndChangeButton = function (element, valueName, defaultValue) {
+			if (GM_getValue(valueName, defaultValue) !== element.dataset.state) {
+				var event = new MouseEvent("click");
+				element.dispatchEvent(event);
+			}
+		}
+		
+		loadAndChangeSelect(cs, "containerState", "compact");
+		loadAndChangeSelect(tes, "twitchEmoteState", "on");
+		loadAndChangeSelect(as, "adventureState", "off");
+		loadAndChangeButton(cdb, "chatDownState", "true");  // String booleans because of the way data attributes work in HTML :(
+		loadAndChangeButton(afb, "autoFocusState", "true");
+		loadAndChangeButton(db, "dragState", "false");
+		
+		cs.addEventListener("change", function () {
+			setTimeout(function () {
+				GM_setValue("containerState", cs.value);
+				console.log("containerState to " + cs.value);
+			}, 100);
+		});
+		
+		tes.addEventListener("change", function () {
+			setTimeout(function () {
+				GM_setValue("twitchEmoteState", tes.value);
+				console.log("twitchEmoteState to " + tes.value);
+			}, 100);
+		});
+		
+		as.addEventListener("change", function () {
+			setTimeout(function () {
+				GM_setValue("adventureState", as.value);
+				console.log("adventureState to " + as.value);
+			}, 100);
+		});
+		
+		cdb.addEventListener("click", function () {
+			setTimeout(function () {
+				GM_setValue("chatDownState", cdb.dataset.state);
+				console.log("chatDownState to " + cdb.dataset.state);
+			}, 100);
+		});
+		
+		afb.addEventListener("click", function () {
+			setTimeout(function () {
+				GM_setValue("autoFocusState", afb.dataset.state);
+				console.log("autoFocusState to " + afs.dataset.state);
+			}, 100);
+		});
+		
+		db.addEventListener("click", function () {
+			setTimeout(function () {
+				GM_setValue("dragState", db.dataset.state);
+				console.log("dragState to " + db.dataset.state);
+			}, 100);
+		});
+		
+	}
+}
+
+attachToSettings();
