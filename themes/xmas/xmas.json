@@ -1,88 +1,88 @@
 {
-	"images": {
-		"bomb": {
-			"src": "https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/themes/xmas/Bomb.png",
-		},
-		"arrow": {
-			"src": "https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/themes/xmas/Arrow.png",
-		},
-		"heart": {
-			"src": "https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/themes/xmas/Heart.png",
-		},
-		"heartEmpty": {
-			"src" :"https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/themes/xmas/HeartEmpty.png",
-		},
-	},
-	"css": {
-		"text": "#App{background:url(https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/themes/xmas/snow_backdrop.png),radial-gradient(ellipse,#016cbe,#01266c),#016cbe;background-repeat:repeat-x;background-position:center bottom}#App>header{background:-webkit-linear-gradient(top,rgba(60,60,128,.4) 0,rgba(60,60,128,.4) 100%);background:-moz-linear-gradient(top,rgba(60,60,128,.4) 0,rgba(60,60,128,.4) 100%);background:-o-linear-gradient(top,rgba(60,60,128,.4) 0,rgba(60,60,128,.4) 100%);background:-ms-linear-gradient(top,rgba(60,60,128,.4) 0,rgba(60,60,128,.4) 100%);background:linear-gradient(to bottom,rgba(60,60,128,.4) 0,rgba(60,60,128,.4) 100%)}# App>main{border-top:0}"
-	},
-	"particles": {
-		"emitters": [
-			{
-				"position": {
-					"x": 0,
-					"y": -0.1,
-					"width": 0,
-					"height": 0,
-				},
-				"velocity": {
-					"x": 0,
-					"y": {
-						"min": 10,
-						"max": 110,
-					},
-					"linkedToSize": true,
-				},
-				"size": {
-					"min": 0.8,
-					"max": 1.2,
-				},
-				"rotation": {
-					"min": 0,
-					"max": 6.283185307179586,
-				},
-				"angularVelocity": {
-					"min": -1,
-					"max": 1,
-				},
-				"spawnRate": {
-					"high": 0.025,
-					"low": 0.005,
-				},
-				"gravity": {
-					"x": 0,
-					"y": 0,
-				},
-			},
-		],
-		"images": [
-			"https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/themes/xmas/snowflake0.png",
-			"https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/themes/xmas/snowflake1.png",
-			"https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/themes/xmas/snowflake2.png",
-			"https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/themes/xmas/snowflake3.png",
-			"https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/themes/xmas/snowflake4.png",
-			"https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/themes/xmas/snowflake5.png",
-			"https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/themes/xmas/snowflake6.png",
-		],
-	},
-	"textStyles": {
-		"statusText": {
-			"color": "#ddd",
-			"shadow": true,
-		},
-		"promptText": {
-			"shadow": true,
-		},
-		"wordText": {
-			"color": "#c0c0c0",
-			"shadow": true,
-		},
-		"highlightedText": {
-			"color": "#80cc80",
-			"shadow": true,
-		},
-		"bonusLetterText": {
-			"color": "#335",
-		},
-	},
+    "images": {
+        "bomb": {
+            "src": "https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/themes/xmas/Bomb.png"
+        },
+        "arrow": {
+            "src": "https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/themes/xmas/Arrow.png"
+        },
+        "heart": {
+            "src": "https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/themes/xmas/Heart.png"
+        },
+        "heartEmpty": {
+            "src": "https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/themes/xmas/HeartEmpty.png"
+        }
+    },
+    "css": {
+        "text": "#App{background:url(https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/themes/xmas/snow_backdrop.png),radial-gradient(ellipse,#016cbe,#01266c),#016cbe;background-repeat:repeat-x;background-position:center bottom}#App>header{background:-webkit-linear-gradient(top,rgba(60,60,128,.4) 0,rgba(60,60,128,.4) 100%);background:-moz-linear-gradient(top,rgba(60,60,128,.4) 0,rgba(60,60,128,.4) 100%);background:-o-linear-gradient(top,rgba(60,60,128,.4) 0,rgba(60,60,128,.4) 100%);background:-ms-linear-gradient(top,rgba(60,60,128,.4) 0,rgba(60,60,128,.4) 100%);background:linear-gradient(to bottom,rgba(60,60,128,.4) 0,rgba(60,60,128,.4) 100%)}# App>main{border-top:0}"
+    },
+    "particles": {
+        "emitters": [
+            {
+                "position": {
+                    "x": 0,
+                    "y": -0.1,
+                    "width": 1,
+                    "height": 0
+                },
+                "velocity": {
+                    "x": 0,
+                    "y": {
+                        "min": 10,
+                        "max": 110
+                    },
+                    "linkedToSize": true
+                },
+                "size": {
+                    "min": 0.8,
+                    "max": 1.2
+                },
+                "rotation": {
+                    "min": 0,
+                    "max": 6.283185307179586
+                },
+                "angularVelocity": {
+                    "min": -1,
+                    "max": 1
+                },
+                "spawnRate": {
+                    "high": 0.025,
+                    "low": 0.005
+                },
+                "gravity": {
+                    "x": 0,
+                    "y": 0
+                }
+            }
+        ],
+        "images": [
+            "https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/themes/xmas/snowflake0.png",
+            "https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/themes/xmas/snowflake1.png",
+            "https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/themes/xmas/snowflake2.png",
+            "https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/themes/xmas/snowflake3.png",
+            "https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/themes/xmas/snowflake4.png",
+            "https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/themes/xmas/snowflake5.png",
+            "https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/themes/xmas/snowflake6.png"
+        ]
+    },
+    "textStyles": {
+        "statusText": {
+            "color": "#ddd",
+            "shadow": true
+        },
+        "promptText": {
+            "shadow": true
+        },
+        "wordText": {
+            "color": "#c0c0c0",
+            "shadow": true
+        },
+        "highlightedText": {
+            "color": "#80cc80",
+            "shadow": true
+        },
+        "bonusLetterText": {
+            "color": "#335"
+        }
+    }
 }
