@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         BombParty Overlay
-// @version      1.3.2
+// @version      1.3.3
 // @description  Overlay + Utilities for BombParty!
 // @icon         https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/dist/icon.png
 // @icon64       https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/dist/icon64.png
@@ -21,6 +21,7 @@
 // @grant        GM_getResourceURL
 // @grant        GM_getValue
 // @grant        GM_setValue
+// @grant        GM_xmlhttpRequest
 // ==/UserScript==
 
 // Grab the twitch emotes
@@ -118,8 +119,8 @@ var source = function() {
 				alphabet: ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z"],
 				alphapos: 0,
 				
-				christmas: false,  //christmas mode
-				snowflakeSpawnRate: 0.025,  // chance that a snoflake is spawned every frame
+				isThemed: false,  // Is the game currently themed
+				particleSpawnRate: "high",
 			};
 			
 			// Store all the game images so they can be changed
@@ -146,10 +147,6 @@ var source = function() {
 			
 			// Relacement src's go here
 			var replacementImages = {
-				bomb: "https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/themes/xmas/Bomb.png",
-				arrow: "https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/themes/xmas/Arrow.png",
-				heart: "https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/themes/xmas/Heart.png",
-				heartEmpty: "https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/themes/xmas/HeartEmpty.png",
 			};
 			
 			// This is a backup of the original src's of the images
@@ -736,150 +733,306 @@ var source = function() {
 
 			// It's my turn to write a long completely unnecessary feature!
 			//////////////////////////////////////////////
-			var snowflakeArray = [];  // An array for snowflakes.
-			                          // Shut up, this is totally normal.
-			var snowflakeImgs = [];   // An array for storing snowflakes.
-			                          // Totally different.
-			var rafID;                // For storing the ID for requestAnimationFrame, so we can stop it
+			var particleEmitters = [];  // An array to store the emitters
+			var particleArray = [];     // An array for actual particles
+			var particleImgs = [];      // An array for particle images
+			var rafID;                  // For storing the ID for requestAnimationFrame, so we can stop it
 			
-			// Fill up the snowflakeImgs
-			for (i = 0; i < 7; i++) {
-				snowflakeImgs.push(imgNodeConstructor(document.createElement("img"), {
-					src: "https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/themes/xmas/snowflake" + i + ".png"
-				}));
-			}
+			var textColors = {          // For converting colours into text specifiers
+				"#cccccc": "statusText",
+				"#ffffff": "promptText",
+				"#a0a0a0": "wordText",
+				"#60aa60": "highlightedText",
+				"#404040": "bonusLetterText",
+			};
 			
 			// Bleh, it turns out that browsers haven't completely agreed on a single function for requestAnimationFrame/cancelAnimationFrame
 			var requestAnimationFrame = window.requestAnimationFrame || window.mozRequestAnimationFrame || window.webkitRequestAnimationFrame || window.msRequestAnimationFrame;
 			var cancelAnimationFrame = window.cancelAnimationFrame || window.mozCancelAnimationFrame;
 			
-			toggleChristmas = function (toggle) {
-				if (toggle && !bpOverlay.christmas) {
-					bpOverlay.christmas = true;
+			// This needs to be exposed because it needs to be called by the GM script
+			loadCustomTheme = function (themeObj) {
+				if (themeObj && !bpOverlay.isThemed) {
+					bpOverlay.isThemed = true;
 				
-					// Them christmas styles
-					var style = document.createElement('style');
-					style.id = "christmasStyles";
-					style.appendChild(document.createTextNode('#App{background:url(https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/themes/xmas/snow_backdrop.png),radial-gradient(ellipse,#016cbe,#01266c),#016cbe;background-repeat:repeat-x;background-position:center bottom}#App>header{background:-webkit-linear-gradient(top,rgba(60,60,128,.4) 0,rgba(60,60,128,.4) 100%);background:-moz-linear-gradient(top,rgba(60,60,128,.4) 0,rgba(60,60,128,.4) 100%);background:-o-linear-gradient(top,rgba(60,60,128,.4) 0,rgba(60,60,128,.4) 100%);background:-ms-linear-gradient(top,rgba(60,60,128,.4) 0,rgba(60,60,128,.4) 100%);background:linear-gradient(to bottom,rgba(60,60,128,.4) 0,rgba(60,60,128,.4) 100%)}# App>main{border-top:0}'));
-					document.getElementsByTagName('head')[0].appendChild(style);
-					
-					// Grab the canvas and its context
-					var canvas = document.getElementById("GameCanvas");
-					var ctx = canvas.getContext("2d");
-					
-					var lastTime = (new Date).getTime();
-					
-					var spawnSnowflake = function () {
-						var size = Math.random() * 0.4 + 0.8;
-						snowflakeArray.push({
-							imageId: Math.floor(Math.random() * snowflakeImgs.length),
-							size: size,
-							position: {x: Math.random() * canvas.width, y: -100},
-							velocity: {x: 0, y: (size - 0.8) * 2.5 * 100 + 10},
-							rotation: Math.random() * Math.PI * 2,
-							angularVelocity: Math.random() * 2 - 1,
-						});
+					// Add and replace images if necessary
+					if (themeObj.images) {
+						for (var i in themeObj.images) {
+							// Validation
+							if (!themeObj.images[i].src) {
+								console.log("Error: source is not defined for image " + i + ". Will try to execute anyway");
+							}
+							
+							replacementImages[i] = themeObj.images[i].src;
+							replaceImage(i);
+						}
+					}
+				
+					// Create a style if there is one.
+					if (themeObj.css) {
+						if (themeObj.css.text) {
+							var style = document.createElement('style');
+							style.id = "customThemeStyle";
+							style.appendChild(document.createTextNode(themeObj.css.text));
+							document.getElementsByTagName('head')[0].appendChild(style);
+						}
+						else if (themeObj.css.src) {
+							var style = document.createElement('style');
+							style.id = "customThemeStyle";
+							style.src = themeObj.css.src;
+							document.getElementsByTagName('head')[0].appendChild(style);
+						}
+						else {
+							console.log("Error: css field declared but no valid css provided. Will try to execute anyway");
+						}
 					}
 					
-					// Actual function used for drawing the snowflakes
-					snowflakeAnimate = function () {
-						// Make a new snowflake
-						if (Math.random() < bpOverlay.snowflakeSpawnRate) {
-							spawnSnowflake();
-						}
-						
-						// Time params
-						var current = (new Date).getTime();
-						var dt = Math.min((current - lastTime) / 1000, 1);
-						lastTime = current;
-						
-						// Euh, reset the scaling
-						ctx.setTransform(1, 0, 0, 1, 0, 0);
-						
-						// Loop through all the snowflakes
-						// We're looping backwards because we want to be able to remove snowflakes
-						// Without messing up list indices
-						for (snowflakeID = snowflakeArray.length - 1; snowflakeID >= 0; snowflakeID--) {
-							var snowflake = snowflakeArray[snowflakeID];
-							var img = snowflakeImgs[snowflake.imageId];
-							
-							// Update its parameters
-							snowflake.position.x += snowflake.velocity.x * dt;
-							snowflake.position.y += snowflake.velocity.y * dt;
-							snowflake.rotation += snowflake.angularVelocity * dt;
-							snowflake.rotation %= Math.PI * 2;
-							
-							var width = img.width * snowflake.size;
-							var height = img.height * snowflake.size;
-							
-							// Draw the snowflake
-							// Apparently, to rotate things, you have to transform the entire canvas context
-							ctx.translate(snowflake.position.x, snowflake.position.y);
-							ctx.rotate(snowflake.rotation);
-							ctx.drawImage(img, -width/2, -height/2, width, height);
-							ctx.rotate(-snowflake.rotation);
-							ctx.translate(-snowflake.position.x, -snowflake.position.y);
-							
-							
-							// Remove the snowflake if necessary
-							if (snowflake.position.y - Math.max(width, height) > canvas.height ||
-							    Math.abs(snowflake.position.x - canvas.width / 2) < 100 ||
-								snowflake.position.x + width/2 > canvas.width - Math.min(100, canvas.height / 11 * 2)) {
-								snowflakeArray.splice(snowflakeID, 1);
+					// If there is particles, then do this whole canvas drawing shebang
+					if (themeObj.particles)
+					{
+						// Load up the images
+						if (themeObj.particles.images && themeObj.particles.images.length) {
+							for (i = 0; i < themeObj.particles.images.length; i++) {
+								var img = new Image;
+								img.src = themeObj.particles.images[i];
+								particleImgs.push(img);
 							}
 						}
+						else {
+							console.log("Error: no particle images defined. Will try to execute anyway");
+						}
 						
-						// Request it again so 
-						rafID = requestAnimationFrame(snowflakeAnimate);
+						// Grab the canvas and its context
+						var canvas = document.getElementById("GameCanvas");
+						var ctx = canvas.getContext("2d");
+						
+						var lastTime = (new Date).getTime();
+						
+						if (themeObj.particles.emitters && themeObj.particles.emitters.length) {
+							var emitters = themeObj.particles.emitters;
+							for (i = 0; i < emitters.length; i++) {
+								var e = emitters[i];
+								e.spawnParticle = function () {
+									if (Math.random() < e.spawnRate[bpOverlay.particleSpawnRate]) {
+										// This bit's quite involved because the data entered into the JSON could take quite a few forms...
+									
+										var rawSize = Math.random();
+									
+										// Determine x-position
+										var pos_x = e.position.x * canvas.width;
+										if (e.position.width) {
+											pos_x += Math.random() * e.position.width * canvas.width;
+										}
+										
+										// determine y-position
+										var pos_y = e.position.y * canvas.height;
+										if (e.position.height) {
+											pos_y += Math.random() * e.position.height * canvas.height;
+										}
+										
+										// Determine x-velocity
+										var vel_x;
+										if (typeof(e.velocity.x) === "number") {
+											vel_x = e.velocity.x;
+										}
+										else {
+											vel_x = e.velocity.x.min + (e.velocity.linkedToSize ? rawSize : Math.random()) * (e.velocity.x.max - e.velocity.x.min);
+										}
+										
+										// Determine y-velocity
+										var vel_y;
+										if (typeof(e.velocity.y) === "number") {
+											vel_y = e.velocity.y;
+										}
+										else {
+											vel_y = e.velocity.y.min + (e.velocity.linkedToSize ? rawSize : Math.random()) * (e.velocity.y.max - e.velocity.y.min);
+										}
+										
+										// Determine size
+										var size;
+										if (typeof(e.size) === "number") {
+											size = e.size;
+										}
+										else {
+											size = e.size.min + rawSize * (e.size.max - e.size.min);
+										}
+										
+										// Determine rotation
+										var rot;
+										if (typeof(e.rotation) === "number") {
+											rot = e.rotation;
+										}
+										else {
+											rot = e.rotation.min + (e.rotation.linkedToSize ? rawSize : Math.random()) * (e.rotation.max - e.rotation.min);
+										}
+										
+										// Determine angular velocity
+										var rotV;
+										if (typeof(e.angularVelocity) === "number") {
+											rotV = e.angularVelocity;
+										}
+										else {
+											rotV = e.angularVelocity.min + (e.angularVelocity.linkedToSize ? rawSize : Math.random()) * (e.angularVelocity.max - e.angularVelocity.min);
+										}
+										
+										if (e.gravity) {
+											// Determine x-gravity
+											var grav_x = e.gravity.x;
+											// Determine y-gravity
+											var grav_y = e.gravity.y;
+										}
+										else {
+											var grav_x = 0;
+											var grav_y = 0;
+										}
+										
+										// Put all of this into a particle object
+										particleArray.push({
+											imageId: Math.floor(Math.random() * particleImgs.length),
+											position: {
+												x: pos_x,
+												y: pos_y,
+											},
+											velocity: {
+												x: vel_x,
+												y: vel_y,
+											},
+											size: size,
+											rotation: rot,
+											angularVelocity: rotV,
+											gravity: {
+												x: grav_x,
+												y: grav_y,
+											},
+											alpha: 1,
+										});
+										
+									}
+								}
+							}
+						}
+						else if (themeObj.particles.emitters === [] || !themeObj.particles.emitters) {
+							console.log("Error: Particles declared but no emitters defined. Will try to execute anyway");
+						}
+						
+						// Actual function used for drawing the particles
+						particleAnimate = function () {
+							// Run spawning thing on all the emitters
+							var emitters = themeObj.particles.emitters;
+							for (i = 0; i < emitters.length; i++) {
+								emitters[i].spawnParticle();
+							}
+							
+							// Time params
+							var current = (new Date).getTime();
+							var dt = Math.min((current - lastTime) / 1000, 1);
+							lastTime = current;
+							
+							// Euh, reset the scaling
+							ctx.setTransform(1, 0, 0, 1, 0, 0);
+							
+							// Loop through all the particles
+							// We're looping backwards because we want to be able to remove particles
+							// Without messing up list indices
+							for (i = particleArray.length - 1; i >= 0; i--) {
+								var particle = particleArray[i];
+								var img = particleImgs[particle.imageId];
+								
+								// Update its parameters
+								particle.position.x += particle.velocity.x * dt;
+								particle.position.y += particle.velocity.y * dt;
+								particle.rotation += particle.angularVelocity * dt;
+								particle.rotation %= Math.PI * 2;
+								particle.velocity.x += particle.gravity.x * dt;
+								particle.velocity.y += particle.gravity.y * dt;
+								
+								// set the alpha to something lower if it's over the prompt or the locked letters.
+								if (Math.abs(particle.position.x - canvas.width / 2) < 100 && Math.abs(particle.position.y - canvas.height /2) < 200 ||
+									particle.position.x + width/2 > canvas.width - Math.min(100, canvas.height / 11 * 2)) {
+									particle.alpha = Math.max(0.1, particle.alpha - 0.05);
+								}
+								else if (particle.alpha < 1) {
+									particle.alpha = Math.min(1, particle.alpha + 0.05);
+								}
+								
+								if (particle.alpha < 1) {
+									var ga = ctx.globalAlpha;
+									ctx.globalAlpha = particle.alpha;
+								}
+								
+								var width = img.width * particle.size;
+								var height = img.height * particle.size;
+								
+								// Draw the particle
+								// Apparently, to rotate things, you have to transform the entire canvas context
+								ctx.translate(particle.position.x, particle.position.y);
+								ctx.rotate(particle.rotation);
+								ctx.drawImage(img, -width/2, -height/2, width, height);
+								ctx.rotate(-particle.rotation);
+								ctx.translate(-particle.position.x, -particle.position.y);
+								
+								if (particle.alpha < 1) {
+									ctx.globalAlpha = ga;
+								}
+								
+								// Remove the particle if necessary
+								if (particle.x < -0.2 * canvas.width || 
+								    particle.position.y < -0.2 * canvas.height ||
+									particle.position.x > 1.2 * canvas.width ||
+									particle.position.y > 1.2 * canvas.height) {
+									particleArray.splice(i, 1);
+								}
+							}
+							
+							// Request it again so 
+							rafID = requestAnimationFrame(particleAnimate);
+						}
 					}
 					
-					ctx.fillTextRedux = ctx.fillText;
-					ctx.fillText = function () {
-						var tc = ctx.shadowColor;
-						var tb = ctx.shadowBlur;
-
-						if (ctx.fillStyle !== "#404040") {
-							ctx.shadowColor="#000";
-							ctx.shadowBlur=10;
-						}
-						
-						switch (ctx.fillStyle) {
-							case "#cccccc":
-								ctx.fillStyle = "#ddd";
-								break;
-							case "#a0a0a0":
-								ctx.fillStyle = "#c0c0c0";
-								break;
-							case "#60aa60":
-								ctx.fillStyle = "#80cc80";
-								break;
-							case "#404040":
-								ctx.fillStyle = "#335";
-								break;
-						}
-						
-						ctx.fillTextRedux.apply(this, arguments);
-						
-						ctx.shadowColor=tc;
-						ctx.shadowBlur=tb;
-					};
+					// Do the text styles
+					if (themeObj.textStyles) {
+						ctx.fillTextRedux = ctx.fillText;
+						ctx.fillText = function () {
+							var tc = ctx.shadowColor;
+							var tb = ctx.shadowBlur;
+							var fs = ctx.fillStyle;
+							
+							var thisStyle = themeObj.textStyles[textColors[fs]];
+							if (thisStyle) {
+								if (thisStyle.color) {
+									ctx.fillStyle = thisStyle.color;
+								}
+								if (thisStyle.shadow) {
+									ctx.shadowColor = "#000";
+									ctx.shadowBlur = 10;
+								}
+								
+							}
+							
+							ctx.fillTextRedux.apply(this, arguments);
+							
+							ctx.fillStyle=fs;
+							ctx.shadowColor=tc;
+							ctx.shadowBlur=tb;
+						};
+					}
 					
-					snowflakeAnimate();
+					particleAnimate();
 					
 					for (var i in gameImages) {
 						replaceImage(i);
 					}
 					
 				}
-				else if (!toggle && bpOverlay.christmas) {
-					bpOverlay.christmas = false;
+				else if (!themeObj && bpOverlay.isThemed) {
+					bpOverlay.isThemed = false;
 				
-					// Get rid of the chrismtas style sheet if there is one
-					if (style = document.getElementById("christmasStyles")) {
+					// Get rid of the custom style sheet if there is one
+					if (style = document.getElementById("customThemeStyle")) {
 						style.parentNode.removeChild(style);
 					}
 					
-					// Cancel the snowflake animation
+					// Cancel the particle animation
 					if (rafID !== undefined) {
 						cancelAnimationFrame(rafID);
 						rafID = undefined;
@@ -894,13 +1047,19 @@ var source = function() {
 					for (var i in gameImages) {
 						unreplaceImage(i);
 					}
+					
+					particleImgs = [];
+					particleArray = [];
+					
+					// Reset so nothing else gets replaced
+					replacementImages = {};
 				}
 			};
 			
 			// Replace image function
 			// Call this when a new image is being drawn or when christmas mode is being activated
 			var replaceImage = function (imageName) {
-				if (replacementImages[imageName]) {
+				if (replacementImages[imageName] && gameImages[imageName]) {
 					gameImages[imageName].src = replacementImages[imageName];
 				}
 			};
@@ -908,7 +1067,7 @@ var source = function() {
 			// Replace the images back with the originals
 			// Call when christmas mode is deactivated
 			var unreplaceImage = function (imageName) {
-				if (backupSources[imageName]) {
+				if (backupSources[imageName] && gameImages[imageName]) {
 					gameImages[imageName].src = backupSources[imageName];
 				}
 			};
@@ -1218,7 +1377,7 @@ var source = function() {
 				var sTabTr = document.createElement("TR");
 				sTabTable.appendChild(sTabTr);
 				var sTabTd = document.createElement("TD");
-				sTabTd.textContent = itemText;
+				sTabTd.innerHTML = itemText;
 				sTabTr.appendChild(sTabTd);
 		
 				//Create the options DOM DOM POMPOM
@@ -1375,7 +1534,7 @@ var source = function() {
 							// Fill up gameImages
 							gameImages[missingGameImgs[i]] = arguments[0];
 							backupSources[missingGameImgs[i]] = arguments[0].src;
-							if (bpOverlay.christmas) {
+							if (bpOverlay.isThemed) {
 								replaceImage(missingGameImgs[i]);
 							}
 							
@@ -2190,7 +2349,7 @@ var source = function() {
 		
 			
 				//The text adventure setting
-				generateSettingsElement("Text Adventure BETA", {off: "Off", on: "On"}, "adventureSetting",
+				generateSettingsElement("Text Adventure<sup>BETA</sup>", {off: "Off", on: "On"}, "adventureSetting",
 					function() {
 						var sTabSelect = document.getElementById("adventureSetting");
 						if(sTabSelect.value === "on") {
@@ -2253,41 +2412,59 @@ var source = function() {
 					}
 				);							
 				
-				// Only activate after the 24th, and then don't be automatic from Jan 6th
-				if ((new Date) > (new Date("Dec 24 2014"))) {
-					generateSettingsElement("Christmas", {on: "On", off: "Off"}, "christmasSelect",
-						function () {
-							var sTabSelect = document.getElementById("christmasSelect");
-							if(sTabSelect.value === "on") {
-								toggleChristmas(true);
-							} else if(sTabSelect.value === "off") {
-								toggleChristmas(false);
-							} else {
-								toggleChristmas(false);
-							}
-						}
-					);
-					
-					if ((new Date) > (new Date("Jan 6 2015"))) {
-						document.getElementById("christmasSelect").value = "off";
+				generateSettingsElement("Theme<sup>BETA</sup>", {
+					none: "None",
+					"https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/themes/xmas/xmas.json": "Christmas",
+					custom: "Custom",
+				}, "themeSelect", function () {
+					var themeSelect = document.getElementById("themeSelect");
+					if (themeSelect.value === "none") {
+						loadCustomTheme(false);
+						document.getElementById("customThemeRow").style.display = "none";
+					}
+					else if (themeSelect.value === "custom") {
+						document.getElementById("customThemeRow").style.display = "";
 					}
 					else {
-						toggleChristmas(true);
+						document.getElementById("customThemeRow").style.display = "none";
 					}
 					
-					generateSettingsElement("Snowflakes", {high: "High", low: "Low", off: "Off"}, "snowflakesSelect",
-						function () {
-							var sTabSelect = document.getElementById("snowflakesSelect");
-							if(sTabSelect.value === "high") {
-								bpOverlay.snowflakeSpawnRate = 0.025;
-							} else if(sTabSelect.value === "low") {
-								bpOverlay.snowflakeSpawnRate = 0.008;
-							} else {
-								bpOverlay.snowflakeSpawnRate = 0;
-							}
+					// Handling the URLs have to be done outside this code
+					// Because it needs access to GM_xmlhttpRequest
+					
+				});
+				
+				// Manual settings creation because it's an input and not a select
+				// It's wrapped in a anonymous function because
+				// I can't be bothered to make sure the variable names don't conflict
+				(function () {
+					var sTabTable = document.getElementById("overlaySettingsTable");
+					var sTabTr = document.createElement("TR");
+					sTabTr.id = "customThemeRow";
+					sTabTr.style.display = "none";
+					sTabTable.appendChild(sTabTr);
+					var sTabTd = document.createElement("TD");
+					sTabTd.innerHTML = "Custom Theme";
+					sTabTr.appendChild(sTabTd);
+					var sTabOptionsTd = document.createElement("TD");
+					sTabTr.appendChild(sTabOptionsTd);
+					var sTabInput = document.createElement("INPUT");
+					sTabInput.id = "customThemeInput";
+					sTabOptionsTd.appendChild(sTabInput);
+				})();
+				
+				generateSettingsElement("Particles", {high: "High", low: "Low", off: "Off"}, "particleSelect",
+					function () {
+						var sTabSelect = document.getElementById("particleSelect");
+						if(sTabSelect.value === "high") {
+							bpOverlay.particleSpawnRate = "high";
+						} else if(sTabSelect.value === "low") {
+							bpOverlay.particleSpawnRate = "low";
+						} else {
+							bpOverlay.particleSpawnRate = "none";
 						}
-					);
-				}
+					}
+				);
 				
 				// Wrap game functions, make the autoscroll/focus buttons.
 				wrapGameFunctions();
@@ -2312,12 +2489,273 @@ s.textContent = '(' + source + ')();';
 document.body.appendChild(s);
 document.body.removeChild(s);
 
-// This code attaches listeners to relevant settings objects to make them persistent
+// Function to validate the theme object
+// This won't catch everything, but it should prevent future errors
+// By making sure all the variables are the right type
+// This is two hundred lines of inefficiency :D
+var validateThemeObj = function (themeObj) {
+	var valid = true;
+	
+	// Validate images
+	if (typeof(themeObj.images) === "object") {
+		for (var i in themeObj.images) {
+			if (typeof(themeObj.images[i]) !== "object") {
+				console.log("Error: image " + i + " is not an object.");
+				valid = false;
+			}
+			else if (typeof(themeObj.images[i].src) !== "string") {
+				console.log("Error: invalid src provided in image " + i + ".");
+				valid = false;
+			}
+		}
+	}
+	else if (typeof(themeObj.images) !== "undefined") {
+		console.log("Error: images is not an object.");
+		valid = false;
+	}
+	
+	// Validate css
+	if (typeof(themeObj.css) === "object") {
+		if (themeObj.css.text) {
+			if (typeof(themeObj.css.text) !== "string") {
+				console.log("Error: invalid css.text provided");
+				valid = false;
+			}
+		}
+		else if (themeObj.css.src) {
+			if (typeof(themeObj.css.src) !== "string") {
+				console.log("Error: invalid css source provided");
+				valid = false;
+			}
+		}
+		else {	
+			console.log("Error: css field declared, but no css provided");
+			valid = false;
+		}
+	}
+	else if (typeof(themeObj.css) !== "undefined") {
+		console.log("Error: css is not an object.");
+		valid = false;
+	}
+	
+	var minMaxOrNumber = function (value) {
+		if (typeof(value) === "object") {
+			if (typeof(value.min) !== "number") {
+				return false;
+			}
+			if (typeof(value.max) !== "number") {
+				return false;
+			}
+		}
+		else if (typeof(value) !== "number") {
+			return false;
+		}
+		return true;
+	}
+	
+	// Validate particles
+	if (typeof(themeObj.particles) === "object") {
+		if (Object.prototype.toString.call(themeObj.particles.emitters) === "[object Array]") {  // Arrays are weird
+			for (i = 0; i < themeObj.particles.emitters.length; i++) {
+				var e = themeObj.particles.emitters[i];
+				// Oh god there's so much to validate aaaaaaaaa
+				
+				// validate position
+				if (typeof(e.position) === "object") {
+					if (typeof(e.position.x) !== "number") {
+						console.log("Error: particle.emitters[" + i + "].position.x is not a number");
+						valid = false;
+					}
+					
+					if (typeof(e.position.y) !== "number") {
+						console.log("Error: particle.emitters[" + i + "].position.y is not a number");
+						valid = false;
+					}
+					
+					if (typeof(e.position.width) !== "undefined" && typeof(e.position.width) !== "number") {
+						console.log("Error: particle.emitters[" + i + "].position.width is not a number");
+						valid = false;
+					}
+					
+					if (typeof(e.position.height) !== "undefined" && typeof(e.position.height) !== "number") {
+						console.log("Error: particle.emitters[" + i + "].position.height is not a number");
+						valid = false;
+					}
+				}
+				else {
+					console.log("Error: particles.emitters[" + i + "].position is not an object");
+					valid = false;
+				}
+				
+				// Validate velocity
+				if (typeof(e.velocity) === "object") {
+					if (!minMaxOrNumber(e.velocity.x)) {
+						console.log("Error: particles.emitters[" + i + "].velocity.x is invalid");
+						valid = false;
+					}
+					if (!minMaxOrNumber(e.velocity.y)) {
+						console.log("Error: particles.emitters[" + i + "].velocity.y is invalid");
+						valid = false;
+					}
+				}
+				else {
+					console.log("Error: particles.emitters[" + i + "].velocity is not an object");
+					valid = false;
+				}
+				
+				// Validate size
+				if (!minMaxOrNumber(e.size)) {
+					console.log("Error: particles.emitters[" + i + "].size is invalid");
+					valid = false;
+				}
+				
+				// Validate rotation
+				if (!minMaxOrNumber(e.rotation)) {
+					console.log("Error: particles.emitters[" + i + "].rotation is invalid");
+					valid = false;
+				}
+				
+				// Validate angularVelocity
+				if (!minMaxOrNumber(e.angularVelocity)) {
+					console.log("Error: particles.emitters[" + i + "].angularVelocity is invalid");
+					valid = false;
+				}
+				
+				// Validate spawnRate
+				if (typeof(e.spawnRate) === "object") {	
+					if (typeof(e.spawnRate.high) !== "number") {
+						console.log("Error: particles.emitters[" + i + "].spawnRate.high is invalid");
+						valid = false;
+					}
+					if (typeof(e.spawnRate.low) !== "number") {
+						console.log("Error: particles.emitters[" + i + "].spawnRate.low is invalid");
+						valid = false;
+					}
+				}
+				else {
+					console.log("Error: particle.emitters[" + i + "].spawnRate is not an object");
+					valid = false;
+				}
+				
+				// Validate gravity
+				if (typeof(e.gravity) === "object") {
+					if (!minMaxOrNumber(e.gravity.x)) {
+						console.log("Error: particles.emitters[" + i + "].gravity.x is invalid");
+						valid = false;
+					}
+					if (!minMaxOrNumber(e.gravity.y)) {
+						console.log("Error: particles.emitters[" + i + "].gravity.y is invalid");
+						valid = false;
+					}
+				}
+				else {
+					console.log("Error: particles.emitters[" + i + "].gravity is not an object");
+					valid = false;
+				}
+				
+				// Effing hell!
+			}
+		}
+		else {
+			console.log("Error: particles.emitters is not an array");
+			valid = false;
+		}
+		
+		if (Object.prototype.toString.call(themeObj.particles.images) === "[object Array]") {
+			for (i = 0; i < themeObj.particles.images.length; i++) {
+				if (typeof(themeObj.particles.images[i]) !== "string") {
+					console.log("Error: particles.images[" + i + "] is not a string");
+					valid = false;
+				}
+			}
+		}
+	}
+	else if (typeof(themeObj.particles) !== "undefined") {
+		console.log("Error: particles is not an object");
+		valid = false;
+	}
+	
+	// Validate textStyles
+	if (typeof(themeObj.textStyles) === "object") {
+		if (typeof(themeObj.textStyles.statusText) !== "object") {
+			console.log("Error: textStyles.statusText is not an object");
+			valid = false;
+		}
+		if (typeof(themeObj.textStyles.promptText) !== "object") {
+			console.log("Error: textStyles.promptText is not an object");
+			valid = false;
+		}
+		if (typeof(themeObj.textStyles.wordText) !== "object") {
+			console.log("Error: textStyles.wordText is not an object");
+			valid = false;
+		}
+		if (typeof(themeObj.textStyles.highlightedText) !== "object") {
+			console.log("Error: textStyles.highlightedText is not an object");
+			valid = false;
+		}
+		if (typeof(themeObj.textStyles.bonusLetterText) !== "object") {
+			console.log("Error: textStyles.bonusLetterText is not an object");
+			valid = false;
+		}
+	}
+	else if (typeof(themeObj.textStyles) !== "undefined") {
+		console.log("Error: textStyles is not an object.");
+		valid = false;
+	}
+	
+	return valid;
+};
 
+// JSON Parser, by Douglas Crockford
+// This is necessary because in this environment I don't have access to the JSON object
+var json_parse=function(){"use strict";var e,t,n={'"':'"',"\\":"\\","/":"/",b:"\b",f:"\f",n:"\n",r:"\r",t:"	"},r,i=function(t){throw{name:"SyntaxError",message:t,at:e,text:r}},s=function(n){if(n&&n!==t){i("Expected '"+n+"' instead of '"+t+"'")}t=r.charAt(e);e+=1;return t},o=function(){var e,n="";if(t==="-"){n="-";s("-")}while(t>="0"&&t<="9"){n+=t;s()}if(t==="."){n+=".";while(s()&&t>="0"&&t<="9"){n+=t}}if(t==="e"||t==="E"){n+=t;s();if(t==="-"||t==="+"){n+=t;s()}while(t>="0"&&t<="9"){n+=t;s()}}e=+n;if(!isFinite(e)){i("Bad number")}else{return e}},u=function(){var e,r,o="",u;if(t==='"'){while(s()){if(t==='"'){s();return o}if(t==="\\"){s();if(t==="u"){u=0;for(r=0;r<4;r+=1){e=parseInt(s(),16);if(!isFinite(e)){break}u=u*16+e}o+=String.fromCharCode(u)}else if(typeof n[t]==="string"){o+=n[t]}else{break}}else{o+=t}}}i("Bad string")},a=function(){while(t&&t<=" "){s()}},f=function(){switch(t){case"t":s("t");s("r");s("u");s("e");return true;case"f":s("f");s("a");s("l");s("s");s("e");return false;case"n":s("n");s("u");s("l");s("l");return null}i("Unexpected '"+t+"'")},l,c=function(){var e=[];if(t==="["){s("[");a();if(t==="]"){s("]");return e}while(t){e.push(l());a();if(t==="]"){s("]");return e}s(",");a()}}i("Bad array")},h=function(){var e,n={};if(t==="{"){s("{");a();if(t==="}"){s("}");return n}while(t){e=u();a();s(":");if(Object.hasOwnProperty.call(n,e)){i('Duplicate key "'+e+'"')}n[e]=l();a();if(t==="}"){s("}");return n}s(",");a()}}i("Bad object")};l=function(){a();switch(t){case"{":return h();case"[":return c();case'"':return u();case"-":return o();default:return t>="0"&&t<="9"?o():f()}};return function(n,s){var o;r=n;e=0;t=" ";o=l();a();if(t){i("Syntax error")}return typeof s==="function"?function u(e,t){var n,r,i=e[t];if(i&&typeof i==="object"){for(n in i){if(Object.prototype.hasOwnProperty.call(i,n)){r=u(i,n);if(r!==undefined){i[n]=r}else{delete i[n]}}}}return s.call(e,t,i)}({"":o},""):o}}()
+// I'm sorry for introducing more foreign code, but I've decided to stand strong against jQuery
+
+var loadAndApplyTheme = function (url) {
+	GM_xmlhttpRequest({
+		method: "GET",
+		url: url,
+		onload: function (resp) {
+			try {
+				var themeObj = json_parse(resp.responseText);
+			}
+			catch (e) {
+				alert("Invalid JSON.");
+				console.log(e);
+				return;
+			}
+			
+			if (validateThemeObj(themeObj)) {
+				var s = document.createElement('script');
+				s.setAttribute("type", "application/javascript");
+				s.textContent = "loadCustomTheme(false); loadCustomTheme(" + resp.responseText + ")";
+				
+				document.body.appendChild(s);
+				document.body.removeChild(s);
+			}
+			else {
+				alert("Invalid theme specified. Check the console for what is invalid.");
+			}
+		},
+		onerror: function (resp) {
+			alert("Error loading " + url);
+		},
+	});
+};
+
+// This code attaches listeners to relevant settings objects to make them persistent
 // Process to attach to things in the DOM from the sandboxed environment
 // This needs to happen in this environment because I need access to the GM functions
 var attachToSettings = function () {
-	if (!(document.getElementById("containerSelect") && document.getElementById("twitchEmoteSelect") && document.getElementById("adventureSetting") && document.getElementById("chatDownButton") && document.getElementById("autoFocusButton") && document.getElementById("dragButton"))) {
+	if (!(document.getElementById("containerSelect") &&
+	      document.getElementById("twitchEmoteSelect") &&
+		  document.getElementById("adventureSetting") &&
+		  document.getElementById("themeSelect") &&
+		  document.getElementById("customThemeInput") &&
+		  document.getElementById("particleSelect") &&
+		  document.getElementById("chatDownButton") &&
+		  document.getElementById("autoFocusButton") &&
+		  document.getElementById("dragButton"))) {
 		setTimeout(attachToSettings, 1000);
 	}
 	else {
@@ -2325,6 +2763,9 @@ var attachToSettings = function () {
 		var cs = document.getElementById("containerSelect");
 		var tes = document.getElementById("twitchEmoteSelect");
 		var as = document.getElementById("adventureSetting");
+		var ts = document.getElementById("themeSelect");
+		var cti = document.getElementById("customThemeInput");
+		var ps = document.getElementById("particleSelect");
 		var cdb = document.getElementById("chatDownButton");
 		var afb = document.getElementById("autoFocusButton");
 		var db = document.getElementById("dragButton");
@@ -2347,52 +2788,66 @@ var attachToSettings = function () {
 		loadAndChangeSelect(cs, "containerState", "compact");
 		loadAndChangeSelect(tes, "twitchEmoteState", "on");
 		loadAndChangeSelect(as, "adventureState", "off");
+		loadAndChangeSelect(ps, "particleState", "high");
 		loadAndChangeButton(cdb, "chatDownState", "true");  // String booleans because of the way data attributes work in HTML :(
+		                                                    // Trust me, I don't like being stringly typed either
 		loadAndChangeButton(afb, "autoFocusState", "true");
 		loadAndChangeButton(db, "dragState", "false");
 		
 		cs.addEventListener("change", function () {
 			setTimeout(function () {
 				GM_setValue("containerState", cs.value);
-				console.log("containerState to " + cs.value);
 			}, 100);
 		});
 		
 		tes.addEventListener("change", function () {
 			setTimeout(function () {
 				GM_setValue("twitchEmoteState", tes.value);
-				console.log("twitchEmoteState to " + tes.value);
 			}, 100);
 		});
 		
 		as.addEventListener("change", function () {
 			setTimeout(function () {
 				GM_setValue("adventureState", as.value);
-				console.log("adventureState to " + as.value);
+			}, 100);
+		});
+		
+		ps.addEventListener("change", function () {
+			setTimeout(function () {
+				GM_setValue("particleState", ps.value);
 			}, 100);
 		});
 		
 		cdb.addEventListener("click", function () {
 			setTimeout(function () {
 				GM_setValue("chatDownState", cdb.dataset.state);
-				console.log("chatDownState to " + cdb.dataset.state);
 			}, 100);
 		});
 		
 		afb.addEventListener("click", function () {
 			setTimeout(function () {
 				GM_setValue("autoFocusState", afb.dataset.state);
-				console.log("autoFocusState to " + afs.dataset.state);
 			}, 100);
 		});
 		
 		db.addEventListener("click", function () {
 			setTimeout(function () {
 				GM_setValue("dragState", db.dataset.state);
-				console.log("dragState to " + db.dataset.state);
 			}, 100);
 		});
 		
+		// These ones are special!
+		ts.addEventListener("change", function () {
+			if (ts.value !== "none" && ts.value !== "custom") {
+				loadAndApplyTheme(ts.value);
+			}
+		});
+		
+		cti.addEventListener("keypress", function (e) {
+			if (e.keyCode === 13) {
+				loadAndApplyTheme(cti.value);
+			}
+		});
 	}
 }
 
