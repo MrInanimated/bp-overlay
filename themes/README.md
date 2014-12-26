@@ -61,6 +61,8 @@ Specifies the source of your image.
 `yOffset`  
 *(optional, unimplemented)* Specifies a y-coordinate offset for alignment purposes.
 
+------------
+
 ### `css` ###
 
 The `css` object should contain any new CSS you would like to be part of the theme.  
@@ -88,6 +90,8 @@ Specifies some CSS right in the JSON file, and overrides the `src` property.
 
 You can specify either a `src` or a `text`.
 
+------------
+
 ### `particles` ###
 
 The `particles` object has two parts, the `emitters` array and the `images` array.
@@ -113,10 +117,10 @@ Specifies the velocities that particles created from this `emitter` may have, in
 Specifies the size multiplier that particles created from this `emitter` may have. It is either a numerical value or an object with the numerical properties `min` and `max`.
 
 `rotation`  
-Specifies the inital angle the particle is at, in radians. It is either a numerical value or an object with the numerical properties `min` and `max`.
+Specifies the inital angle the particle is at, in radians. It is either a numerical value or an object with the numerical properties `min` and `max`. If it is an object, you can also specify an optional boolean `linkedToSize` to make the variation in rotation proportional to the variation in size.
 
 `angularVelocity`  
-Specifies the angular velocity of the particle, in radians per second. It is either a numerical value or an object with the numerical properties `min` and `max`.
+Specifies the angular velocity of the particle, in radians per second. It is either a numerical value or an object with the numerical properties `min` and `max`. If it is an object, you can also specify an optional boolean `linkedToSize` to make the variation in angular velocity proportional to the variation in size.
 
 `spawnRate`  
 The chance that this emitter has every frame to create a particle, in chance per frame. This is an object with two numerical properties:  
@@ -141,6 +145,8 @@ The array should be a list of sources, e.g.:
     "http://path/to/particle/2.png"
 ]
 ```
+
+------------
 
 ### `textStyles` ###
 
