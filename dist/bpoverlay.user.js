@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         BombParty Overlay
-// @version      1.3.3
+// @version      1.3.4
 // @description  Overlay + Utilities for BombParty!
 // @icon         https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/dist/icon.png
 // @icon64       https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/dist/icon64.png
@@ -996,6 +996,11 @@ var source = function() {
 							var tc = ctx.shadowColor;
 							var tb = ctx.shadowBlur;
 							var fs = ctx.fillStyle;
+							var f = ctx.font;
+							
+							var fontA = f.split("px ");
+							var fontSize = fontA[0];
+							var fontFamily = fontA[1];
 							
 							var thisStyle = themeObj.textStyles[textColors[fs]];
 							if (thisStyle) {
@@ -1007,16 +1012,84 @@ var source = function() {
 									ctx.shadowBlur = 10;
 								}
 								
+								var newFont = [fontSize, fontFamily];
+								
+								if (textColors[fs] === "wordText" || textColors[fs] === "highlightedText") {
+									if (fontSize === "20") {
+										if (thisStyle.majorFontSize) {
+											newFont[0] = thisStyle.majorFontSize;
+										}
+									}
+									else if (fontSize === "14") {
+										if (thisStyle.minorFontSize) {
+											newFont[0] = thisStyle.minorFontSize;
+										}
+									}
+								}
+								else {
+									if (thisStyle.fontSize) {
+										newFont[0] = thisStyle.fontSize;
+									}
+								}
+								
+								if (thisStyle.fontFamily) {
+									newFont[1] = thisStyle.fontFamily;
+								}
+								
+								ctx.font = newFont.join("px ");
 							}
 							
 							ctx.fillTextRedux.apply(this, arguments);
 							
+							ctx.font = f;
 							ctx.fillStyle=fs;
 							ctx.shadowColor=tc;
 							ctx.shadowBlur=tb;
 						};
-					}
 					
+						// Since I'm changing the text size and style sometimes, I need to adjust ctx.measureText
+						ctx.measureTextRedux = ctx.measureText;
+						ctx.measureText = function () {
+							var f = ctx.font;
+							
+							var fontA = f.split("px ");
+							var fontSize = fontA[0];
+							var fontFamily = fontA[1];
+							
+							var thisStyle = themeObj.textStyles[textColors[fs]];
+							if (thisStyle) {
+								var newFont = [fontSize, fontFamily];
+								
+								// Helpfully, the only time the measureText is actually used
+								// In Elisee's code is when the words below the players are being drawn
+								if (textColors[fs] === "wordText" || textColors[fs] === "highlightedText") {
+									if (fontSize === "20") {
+										if (thisStyle.majorFontSize) {
+											newFont[0] = thisStyle.majorFontSize;
+										}
+									}
+									else if (fontSize === "14") {
+										if (thisStyle.minorFontSize) {
+											newFont[0] = thisStyle.minorFontSize;
+										}
+									}
+								}
+								
+								if (thisFont.fontFamily) {
+									newFont[1] = thisFont.fontFamily;
+								}
+								
+								ctx.font = newFont.join("px ");
+							}
+
+							var result = ctx.measureTextRedux.apply(this, arguments);
+							
+							ctx.font = f;
+							
+							return result;
+						}
+						
+					}
 					particleAnimate();
 					
 					for (var i in gameImages) {
@@ -2476,7 +2549,7 @@ var source = function() {
 			setInterval(updateTime, 1000);
 
 			// "Update Text"
-			channel.appendToChat("Info", "New Update! (2014-12-24):<br />Merry Christmas and a Happy New Year!<br />Persistent settings: Settings should now save over sessions.");
+			channel.appendToChat("Info", "Experimental! (2014-12-26):<br />Custom Theme loading!");
 		}
 		main();
 	}
@@ -2675,27 +2748,53 @@ var validateThemeObj = function (themeObj) {
 		valid = false;
 	}
 	
+	var validateTextStyle = function (textStyle) {
+		if (typeof(textStyle) === "object") {
+			if (typeof(textStyle.color) !== "undefined") {
+				if (typeof(textStyle.color) !== "string") {
+					return false;
+				}
+			}
+			
+			if (typeof(textStyle.fontFamily) !== "undefined") {
+				if (typeof(textStyle.fontFamily) !== "string") {
+					return false;
+				}
+			}
+			
+			if (typeof(textStyle.fontSize) !== "undefined") {
+				if (typeof(textStyle.fontSize) !== "number") {
+					return false;
+				}
+			}
+			
+			if (typeof(textStyle.majorFontSize) !== "undefined") {
+				if (typeof(textStyle.majorFontSize) !== "number") {
+					return false;
+				}
+			}
+			
+			if (typeof(textStyle.minorFontSize) !== "undefined") {
+				if (typeof(textStyle.minorFontSize) !== "number") {
+					return false;
+				}
+			}
+		}
+		else if (typeof(textStyle !== "undefined")) {
+			return false;
+		}
+		return true;
+	}
+	
+	var ts = ["statusText", "promptText", "wordText", "highlightedText", "bonusLetterText"];
+	
 	// Validate textStyles
 	if (typeof(themeObj.textStyles) === "object") {
-		if (typeof(themeObj.textStyles.statusText) !== "object") {
-			console.log("Error: textStyles.statusText is not an object");
-			valid = false;
-		}
-		if (typeof(themeObj.textStyles.promptText) !== "object") {
-			console.log("Error: textStyles.promptText is not an object");
-			valid = false;
-		}
-		if (typeof(themeObj.textStyles.wordText) !== "object") {
-			console.log("Error: textStyles.wordText is not an object");
-			valid = false;
-		}
-		if (typeof(themeObj.textStyles.highlightedText) !== "object") {
-			console.log("Error: textStyles.highlightedText is not an object");
-			valid = false;
-		}
-		if (typeof(themeObj.textStyles.bonusLetterText) !== "object") {
-			console.log("Error: textStyles.bonusLetterText is not an object");
-			valid = false;
+		for (i = 0; i < ts.length; i++) {
+			if (!validateTextStyle(themeObj.textStyles[ts[i]])) {
+				console.log("Error: textStyles." + ts[i] + " is invalid or has some invalid parameters.");
+				valid = false;
+			}
 		}
 	}
 	else if (typeof(themeObj.textStyles) !== "undefined") {

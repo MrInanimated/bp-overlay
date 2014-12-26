@@ -170,13 +170,25 @@ To change the style of one of these texts, simply add a name-`textStyle` object 
 
 #### `textStyle` object ####
 
-The `textStyle` object currently only supports two values, both of which are optional.
+The `textStyle` object contains the options to style the text drawn on the canvas. All of these options are optional.
 
 `color`  
 *(optional)* The color to set this style of text to. This is is a hexcode string.
 
 `shadow`  
 *(optional)* If true, a shadow will be displayed around this style of text. This may be useful for displaying light-colored text on light-colored backgrounds.
+
+`fontFamily`  
+*(optional)* The font family you want to display this text in. This is a string. Remember that the user has to have this font on their system to be able to use it.
+
+`fontSize`  
+*(optional)* The size of the font you want to display this text in. This is a number. This does not affect the `wordText` and the `highlightedText` styles.
+
+`majorFontSize`  
+*(optional)* The size of the `wordText` and `highlightedText` styles when they're under the current player (so when the font size of them is larger). Does not affect the other text styles.
+
+`minorFontSize`  
+*(optional)* The size of the `wordText` and `highlightedText` styles when they're not under the current player (so when the font size of them is smaller). Does not affect the other text styles.
 
 Sample
 ------
