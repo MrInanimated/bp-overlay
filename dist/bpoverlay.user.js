@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         BombParty Overlay
-// @version      1.3.4
+// @version      1.3.5
 // @description  Overlay + Utilities for BombParty!
 // @icon         https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/dist/icon.png
 // @icon64       https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/dist/icon64.png
@@ -1115,6 +1115,9 @@ var source = function() {
 					
 					if (ctx.fillTextRedux) {
 						ctx.fillText = ctx.fillTextRedux;
+					}
+					if (ctx.measureTextRedux) {
+						ctx.measureText = ctx.measureTextRedux;
 					}
 					
 					for (var i in gameImages) {
