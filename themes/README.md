@@ -34,7 +34,7 @@ All the images used in the canvas drawing can be changed, which are:
   * `arrow`: http://bombparty.sparklinlabs.com/images/Arrow.png
   * `bomb`: http://bombparty.sparklinlabs.com/images/Bomb.png
   * `sparkle`: http://bombparty.sparklinlabs.com/images/Sparkle.png
-  * `avatarPlaceholder`: http://bombparty.sparklinlabs.com/images/AvatarPlaceholder.png
+  * `avatarPlaceHolder`: http://bombparty.sparklinlabs.com/images/AvatarPlaceholder.png
   * `letter`: http://bombparty.sparklinlabs.com/images/Letter.png
 
 To specify a image replacement, simply add a name-`image` object pair to the `images` object, like thus:  
