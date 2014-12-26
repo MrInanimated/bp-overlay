@@ -50,7 +50,7 @@ To specify a image replacement, simply add a name-`image` object pair to the `im
 ```
 
 #### `image` object ####
-A `image` object goes in the `images` object (naming things is hard, okay?) and can contain three values:
+An `image` object goes in the `images` object (naming things is hard, okay?) and can contain three values:
 
 `src`  
 Specifies the source of your image.
@@ -86,7 +86,7 @@ Specifies an external CSS source. This property is overriden by the `text` prope
 `text`  
 Specifies some CSS right in the JSON file, and overrides the `src` property.
 
-You can specify a `src` or a `text`.
+You can specify either a `src` or a `text`.
 
 ### `particles` ###
 
@@ -175,4 +175,4 @@ The `textStyle` object currently only supports two values, both of which are opt
 Sample
 ------
 
-The above may have seemed extremely confusing, which is not surprising because it's something that I wrote. If you would like a sample to better understand how this words, please take a look at [xmas.json](https://github.com/MrInanimated/bp-overlay/blob/master/themes/xmas/xmas.json), which demonstrates the majority of features documented here.
+The above may have seemed extremely confusing, which is not surprising because it's something that I wrote. If you would like a sample to better understand how this works, please take a look at [xmas.json](https://github.com/MrInanimated/bp-overlay/blob/master/themes/xmas/xmas.json), which demonstrates the majority of features documented here.
