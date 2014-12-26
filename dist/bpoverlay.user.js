@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         BombParty Overlay
-// @version      1.3.5
+// @version      1.3.6
 // @description  Overlay + Utilities for BombParty!
 // @icon         https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/dist/icon.png
 // @icon64       https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/dist/icon64.png
@@ -1051,6 +1051,7 @@ var source = function() {
 						ctx.measureTextRedux = ctx.measureText;
 						ctx.measureText = function () {
 							var f = ctx.font;
+							var fs = ctx.fillStyle;
 							
 							var fontA = f.split("px ");
 							var fontSize = fontA[0];
