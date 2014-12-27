@@ -56,10 +56,10 @@ An `image` object goes in the `images` object (naming things is hard, okay?) and
 Specifies the source of your image.
 
 `xOffset`  
-*(optional, unimplemented)* Specifies an x-coordinate offset for alignment purposes.
+*(optional)* Specifies an x-coordinate offset for alignment purposes. Be aware that this will behave weirdly with rotation and scaling.
 
 `yOffset`  
-*(optional, unimplemented)* Specifies a y-coordinate offset for alignment purposes.
+*(optional)* Specifies a y-coordinate offset for alignment purposes. Be aware that this will behave weirdly with rotation and scaling.
 
 ------------
 

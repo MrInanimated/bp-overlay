@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         BombParty Overlay
-// @version      1.3.6
+// @version      1.3.7
 // @description  Overlay + Utilities for BombParty!
 // @icon         https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/dist/icon.png
 // @icon64       https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/dist/icon64.png
@@ -147,6 +147,10 @@ var source = function() {
 			
 			// Relacement src's go here
 			var replacementImages = {
+			};
+			
+			// Replacement offsets go here
+			var replacementOffsets = {
 			};
 			
 			// This is a backup of the original src's of the images
@@ -764,6 +768,19 @@ var source = function() {
 							}
 							
 							replacementImages[i] = themeObj.images[i].src;
+							
+							if (themeObj.images[i].xOffset || themeObj.images[i].yOffset) {
+								var offset = {x: 0, y: 0};
+								if (themeObj.images[i].xOffset) {
+									offset.x = themeObj.images[i].xOffset;
+								}
+								if (themeObj.images[i].yOffset) {
+									offset.y = themeObj.images[i].yOffset
+								}
+								
+								replacementOffsets[i] = offset;
+							}
+							
 							replaceImage(i);
 						}
 					}
@@ -788,8 +805,7 @@ var source = function() {
 					}
 					
 					// If there is particles, then do this whole canvas drawing shebang
-					if (themeObj.particles)
-					{
+					if (themeObj.particles) {
 						// Load up the images
 						if (themeObj.particles.images && themeObj.particles.images.length) {
 							for (i = 0; i < themeObj.particles.images.length; i++) {
@@ -987,6 +1003,8 @@ var source = function() {
 							// Request it again so 
 							rafID = requestAnimationFrame(particleAnimate);
 						}
+						
+						particleAnimate();
 					}
 					
 					// Do the text styles
@@ -1076,8 +1094,8 @@ var source = function() {
 									}
 								}
 								
-								if (thisFont.fontFamily) {
-									newFont[1] = thisFont.fontFamily;
+								if (thisStyle.fontFamily) {
+									newFont[1] = thisStyle.fontFamily;
 								}
 								
 								ctx.font = newFont.join("px ");
@@ -1091,7 +1109,6 @@ var source = function() {
 						}
 						
 					}
-					particleAnimate();
 					
 					for (var i in gameImages) {
 						replaceImage(i);
@@ -1130,11 +1147,12 @@ var source = function() {
 					
 					// Reset so nothing else gets replaced
 					replacementImages = {};
+					replacementOffsets = {};
 				}
 			};
 			
 			// Replace image function
-			// Call this when a new image is being drawn or when christmas mode is being activated
+			// Call this when a new image is being drawn or when custom theme mode is being activated
 			var replaceImage = function (imageName) {
 				if (replacementImages[imageName] && gameImages[imageName]) {
 					gameImages[imageName].src = replacementImages[imageName];
@@ -1142,7 +1160,7 @@ var source = function() {
 			};
 			
 			// Replace the images back with the originals
-			// Call when christmas mode is deactivated
+			// Call when custom theme mode is deactivated
 			var unreplaceImage = function (imageName) {
 				if (backupSources[imageName] && gameImages[imageName]) {
 					gameImages[imageName].src = backupSources[imageName];
@@ -1150,7 +1168,7 @@ var source = function() {
 			};
 			
 			//////////////////////////////////////////////
-			// END of most of the christmas code
+			// END of most of the custom theme code
 			
 			// This function is called whenever a new round begins.
 			var generateActorConditions = function() {
@@ -1620,13 +1638,24 @@ var source = function() {
 						}
 					}
 				
-					// reset this function back after it's done its job
-					if (missingGameImgs.length === 0) {
-						ctx.drawImage = ctx.drawImageRedux;
+					// If there has been an offset specified, apply it
+					var replaced = false;
+					for (var i in replacementOffsets) {
+						if (gameImages[i].src === arguments[0].src) {
+							replaced = replacementOffsets[i];
+							ctx.translate(replaced.x, replaced.y);
+							break;
+						}
 					}
 				
 					// Of course, we need to call the actual function first
-					return ctx.drawImageRedux.apply(this, arguments);
+					var val = ctx.drawImageRedux.apply(this, arguments);
+					
+					// reset the offset
+					if (replaced) {
+						ctx.translate(-replaced.x, -replaced.y);
+					}
+					return val;
 				};
 			
 				// Screw your function for handling chat messages, Elisee
@@ -2580,9 +2609,21 @@ var validateThemeObj = function (themeObj) {
 				console.log("Error: image " + i + " is not an object.");
 				valid = false;
 			}
-			else if (typeof(themeObj.images[i].src) !== "string") {
-				console.log("Error: invalid src provided in image " + i + ".");
-				valid = false;
+			else {
+				if (typeof(themeObj.images[i].src) !== "string") {
+					console.log("Error: invalid src provided in image " + i + ".");
+					valid = false;
+				}
+				
+				if (typeof(themeObj.images[i].xOffset) !== "number" && typeof(themeObj.images[i].xOffset) !== "undefined") {
+					console.log("Error: invalid xOffset in image " + i + ".");
+					valid = false;
+				}
+				
+				if (typeof(themeObj.images[i].yOffset) !== "number" && typeof(themeObj.images[i].yOffset) !== "undefined") {
+					console.log("Error: invalid yOffset in image " + i + ".");
+					valid = false;
+				}
 			}
 		}
 	}
