@@ -2582,7 +2582,7 @@ var source = function() {
 			setInterval(updateTime, 1000);
 
 			// "Update Text"
-			channel.appendToChat("Info", "Experimental! (2014-12-26):<br />Custom Theme loading!");
+			channel.appendToChat("Info", "New Update! (2014-12-30):<br />Custom Theme loading!");
 		}
 		main();
 	}

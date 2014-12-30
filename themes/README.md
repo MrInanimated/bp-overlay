@@ -19,15 +19,11 @@ If you have finished making these assets, you will need to declare them in a JSO
 
 You may want to <a href="http://en.wikipedia.org/wiki/JSON">get</a> <a href="http://www.json.org/">acquainted</a> with JSON before doing this.
 
-Writing the JSON file
----------------------
+Making replacement images
+-------------------------
 
-The JSON file should contain one object which contains some of the four following objects:
-
-### `images` ###
-
-The `images` object is a collection of images which are there to replace the existing default game assets.  
-All the images used in the canvas drawing can be changed, which are:
+You may decide that for your custom theme you would like to replace some of the images used in the game.  
+The images that are actually used as assets on the game are these:  
   * `avatarShadow` : http://bombparty.sparklinlabs.com/images/AvatarShadow.png
   * `heart`: http://bombparty.sparklinlabs.com/images/Heart.png
   * `heartEmpty`: http://bombparty.sparklinlabs.com/images/HeartEmpty.png
@@ -36,6 +32,33 @@ All the images used in the canvas drawing can be changed, which are:
   * `sparkle`: http://bombparty.sparklinlabs.com/images/Sparkle.png
   * `avatarPlaceHolder`: http://bombparty.sparklinlabs.com/images/AvatarPlaceholder.png
   * `letter`: http://bombparty.sparklinlabs.com/images/Letter.png
+
+The overlay supports the replacement of any one of these images.
+
+Replacement images for these should ideally be of the same size, although you may experiment with different sizes of the images (keeping in mind that most of the drawing code is hard-coded into the game which I have no ability to change).
+
+Writing CSS
+-----------
+
+This readme is far too small to contain a tutorial on how to write CSS. However, if you would to do the common task of setting the background to something else, the div that contains the game canvas is `#App > main`. For example, in [xmas.json](https://github.com/MrInanimated/bp-overlay/blob/master/themes/xmas/xmas.json) the gradient of the background was changed and a background image was added, which used the following CSS:  
+```CSS
+#App {
+    background: url(https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/themes/xmas/snow_backdrop.png), radial-gradient(ellipse,#016cbe,#01266c),#016cbe;
+    background-repeat: repeat-x;
+    background-position: center bottom;
+}
+```
+
+You can make the assumption that this CSS will be last in the loading order, meaning that it overrides other css defined for the same specificity.
+
+Writing the JSON file
+---------------------
+
+The JSON file should contain one object which contains some of the four following objects:
+
+### `images` ###
+
+The `images` object is a collection of images which are there to replace the existing default game assets.
 
 To specify a image replacement, simply add a name-`image` object pair to the `images` object, like thus:  
 ```JSON
