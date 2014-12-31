@@ -15,7 +15,7 @@ If you have firefox, you will require Greasemonkey, which you can find [here](ht
 
 If/once you have Tampermonkey/Greasemonkey installed, you can use this link to install the overlay:
 
-[BombParty Overlay](../raw/master/dist/bpoverlay.min.user.js)
+[BombParty Overlay](https://github.com/MrInanimated/bp-overlay/raw/master/dist/bpoverlay.min.user.js)
 
 Tampermonkey/Greasemonkey should automatically pick it up as a userscript, and allow you to install it.
 
@@ -35,5 +35,5 @@ The overlay offers many features most of which are there to improve the BombPart
   ![Player List with Ban Buttons](https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/images/playerlist.png)
   * **Hard Modes**: Think you're a pretty good player? Alright, how about if the overlay forces you to type in your words backwards? When your word has to always contain either J, Q, or V? When successive words have to start with each letter of the alphabet? When your word has to always contain X or Z?
   * **Text Adventure<sup>BETA</sup>**: Represent the game in a "text adventure" format. This is a silly and completely unnecessary easter egg.
-  * **Custom Themes<sup>BETA</sup>**: Change the way BombParty looks! (Currently, there's only one theme. You can look into how to make your own [here](../tree/master/themes))  
+  * **Custom Themes<sup>BETA</sup>**: Change the way BombParty looks! (Currently, there's only one theme. You can look into how to make your own [here](https://github.com/MrInanimated/bp-overlay/tree/master/themes))  
   !["Christmas" Theme](https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/images/xmas.png)
