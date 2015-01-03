@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         BombParty Overlay
-// @version      1.3.7
+// @version      1.3.8
 // @description  Overlay + Utilities for BombParty!
 // @icon         https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/dist/icon.png
 // @icon64       https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/dist/icon64.png
@@ -1641,7 +1641,7 @@ var source = function() {
 					// If there has been an offset specified, apply it
 					var replaced = false;
 					for (var i in replacementOffsets) {
-						if (gameImages[i].src === arguments[0].src) {
+						if (gameImages[i] && gameImages[i].src === arguments[0].src) {
 							replaced = replacementOffsets[i];
 							ctx.translate(replaced.x, replaced.y);
 							break;
@@ -2582,7 +2582,7 @@ var source = function() {
 			setInterval(updateTime, 1000);
 
 			// "Update Text"
-			channel.appendToChat("Info", "New Update! (2014-12-30):<br />Custom Theme loading!");
+			channel.appendToChat("Info", "New Update! (2014-01-03):<br />Small bugfix in loading offsets.<br />Custom themes should now save accross sessions.");
 		}
 		main();
 	}
@@ -2984,14 +2984,32 @@ var attachToSettings = function () {
 		ts.addEventListener("change", function () {
 			if (ts.value !== "none" && ts.value !== "custom") {
 				loadAndApplyTheme(ts.value);
+				GM_setValue("theme", ts.value);
+				GM_setValue("customTheme", "none");
+				cti.value = "";
+			}
+			else if (ts.value === "none") {
+				GM_setValue("theme", "none");
+				GM_setValue("customTheme", "none");
 			}
 		});
 		
 		cti.addEventListener("keypress", function (e) {
 			if (e.keyCode === 13) {
 				loadAndApplyTheme(cti.value);
+				GM_setValue("theme", "custom");
+				GM_setValue("customTheme", cti.value);
 			}
 		});
+		
+		loadAndChangeSelect(ts, "theme", "none");
+		
+		if (GM_getValue("customTheme", "none") !== "none") {
+			GM_setValue("theme", "custom");
+			cti.value = GM_getValue("customTheme", "none");
+			loadAndApplyTheme(cti.value);
+		}
+		
 	}
 }
 
