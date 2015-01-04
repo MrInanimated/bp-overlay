@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         BombParty Overlay
-// @version      1.3.8
+// @version      1.3.9
 // @description  Overlay + Utilities for BombParty!
 // @icon         https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/dist/icon.png
 // @icon64       https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/dist/icon64.png
@@ -75,6 +75,171 @@ var source = function() {
 			 */
 			!function(a,b){"function"==typeof define&&define.amd?define([],function(){return a.returnExportsGlobal=b()}):"object"==typeof exports?module.exports=b():a.Autolinker=b()}(this,function(){var a=function(b){a.Util.assign(this,b),this.matchValidator=new a.MatchValidator};return a.prototype={constructor:a,urls:!0,email:!0,twitter:!0,newWindow:!0,stripPrefix:!0,className:"",htmlCharacterEntitiesRegex:/(&nbsp;|&#160;|&lt;|&#60;|&gt;|&#62;)/gi,matcherRegex:function(){var a=/(^|[^\w])@(\w{1,15})/,b=/(?:[\-;:&=\+\$,\w\.]+@)/,c=/(?:[A-Za-z][-.+A-Za-z0-9]+:(?![A-Za-z][-.+A-Za-z0-9]+:\/\/)(?!\d+\/?)(?:\/\/)?)/,d=/(?:www\.)/,e=/[A-Za-z0-9\.\-]*[A-Za-z0-9\-]/,f=/\.(?:international|construction|contractors|enterprises|photography|productions|foundation|immobilien|industries|management|properties|technology|christmas|community|directory|education|equipment|institute|marketing|solutions|vacations|bargains|boutique|builders|catering|cleaning|clothing|computer|democrat|diamonds|graphics|holdings|lighting|partners|plumbing|supplies|training|ventures|academy|careers|company|cruises|domains|exposed|flights|florist|gallery|guitars|holiday|kitchen|neustar|okinawa|recipes|rentals|reviews|shiksha|singles|support|systems|agency|berlin|camera|center|coffee|condos|dating|estate|events|expert|futbol|kaufen|luxury|maison|monash|museum|nagoya|photos|repair|report|social|supply|tattoo|tienda|travel|viajes|villas|vision|voting|voyage|actor|build|cards|cheap|codes|dance|email|glass|house|mango|ninja|parts|photo|shoes|solar|today|tokyo|tools|watch|works|aero|arpa|asia|best|bike|blue|buzz|camp|club|cool|coop|farm|fish|gift|guru|info|jobs|kiwi|kred|land|limo|link|menu|mobi|moda|name|pics|pink|post|qpon|rich|ruhr|sexy|tips|vote|voto|wang|wien|wiki|zone|bar|bid|biz|cab|cat|ceo|com|edu|gov|int|kim|mil|net|onl|org|pro|pub|red|tel|uno|wed|xxx|xyz|ac|ad|ae|af|ag|ai|al|am|an|ao|aq|ar|as|at|au|aw|ax|az|ba|bb|bd|be|bf|bg|bh|bi|bj|bm|bn|bo|br|bs|bt|bv|bw|by|bz|ca|cc|cd|cf|cg|ch|ci|ck|cl|cm|cn|co|cr|cu|cv|cw|cx|cy|cz|de|dj|dk|dm|do|dz|ec|ee|eg|er|es|et|eu|fi|fj|fk|fm|fo|fr|ga|gb|gd|ge|gf|gg|gh|gi|gl|gm|gn|gp|gq|gr|gs|gt|gu|gw|gy|hk|hm|hn|hr|ht|hu|id|ie|il|im|in|io|iq|ir|is|it|je|jm|jo|jp|ke|kg|kh|ki|km|kn|kp|kr|kw|ky|kz|la|lb|lc|li|lk|lr|ls|lt|lu|lv|ly|ma|mc|md|me|mg|mh|mk|ml|mm|mn|mo|mp|mq|mr|ms|mt|mu|mv|mw|mx|my|mz|na|nc|ne|nf|ng|ni|nl|no|np|nr|nu|nz|om|pa|pe|pf|pg|ph|pk|pl|pm|pn|pr|ps|pt|pw|py|qa|re|ro|rs|ru|rw|sa|sb|sc|sd|se|sg|sh|si|sj|sk|sl|sm|sn|so|sr|st|su|sv|sx|sy|sz|tc|td|tf|tg|th|tj|tk|tl|tm|tn|to|tp|tr|tt|tv|tw|tz|ua|ug|uk|us|uy|uz|va|vc|ve|vg|vi|vn|vu|wf|ws|ye|yt|za|zm|zw)\b/,g=/[\-A-Za-z0-9+&@#\/%=~_()|'$*\[\]?!:,.;]*[\-A-Za-z0-9+&@#\/%=~_()|'$*\[\]]/;return new RegExp(["(",a.source,")","|","(",b.source,e.source,f.source,")","|","(","(?:","(",c.source,e.source,")","|","(?:","(.?//)?",d.source,e.source,")","|","(?:","(.?//)?",e.source,f.source,")",")","(?:"+g.source+")?",")"].join(""),"gi")}(),charBeforeProtocolRelMatchRegex:/^(.)?\/\//,link:function(b){var c=this,d=this.getHtmlParser(),e=this.htmlCharacterEntitiesRegex,f=0,g=[];return d.parse(b,{processHtmlNode:function(a,b,c){"a"===b&&(c?f=Math.max(f-1,0):f++),g.push(a)},processTextNode:function(b){if(0===f)for(var d=a.Util.splitAndCapture(b,e),h=0,i=d.length;i>h;h++){var j=d[h],k=c.processTextNode(j);g.push(k)}else g.push(b)}}),g.join("")},getHtmlParser:function(){var b=this.htmlParser;return b||(b=this.htmlParser=new a.HtmlParser),b},getTagBuilder:function(){var b=this.tagBuilder;return b||(b=this.tagBuilder=new a.AnchorTagBuilder({newWindow:this.newWindow,truncate:this.truncate,className:this.className})),b},processTextNode:function(a){var b=this;return a.replace(this.matcherRegex,function(a,c,d,e,f,g,h,i,j){var k=b.processCandidateMatch(a,c,d,e,f,g,h,i,j);if(k){var l=b.createMatchReturnVal(k.match,k.matchStr);return k.prefixStr+l+k.suffixStr}return a})},processCandidateMatch:function(b,c,d,e,f,g,h,i,j){var k,l=i||j,m="",n="";if(c&&!this.twitter||f&&!this.email||g&&!this.urls||!this.matchValidator.isValidMatch(g,h,l))return null;if(this.matchHasUnbalancedClosingParen(b)&&(b=b.substr(0,b.length-1),n=")"),f)k=new a.match.Email({matchedText:b,email:f});else if(c)d&&(m=d,b=b.slice(1)),k=new a.match.Twitter({matchedText:b,twitterHandle:e});else{if(l){var o=l.match(this.charBeforeProtocolRelMatchRegex)[1]||"";o&&(m=o,b=b.slice(1))}k=new a.match.Url({matchedText:b,url:b,protocolUrlMatch:!!h,protocolRelativeMatch:!!l,stripPrefix:this.stripPrefix})}return{prefixStr:m,suffixStr:n,matchStr:b,match:k}},matchHasUnbalancedClosingParen:function(a){var b=a.charAt(a.length-1);if(")"===b){var c=a.match(/\(/g),d=a.match(/\)/g),e=c&&c.length||0,f=d&&d.length||0;if(f>e)return!0}return!1},createMatchReturnVal:function(b,c){var d;if(this.replaceFn&&(d=this.replaceFn.call(this,this,b)),"string"==typeof d)return d;if(d===!1)return c;if(d instanceof a.HtmlTag)return d.toString();var e=this.getTagBuilder(),f=e.build(b);return f.toString()}},a.link=function(b,c){var d=new a(c);return d.link(b)},a.match={},a.Util={abstractMethod:function(){throw"abstract"},assign:function(a,b){for(var c in b)b.hasOwnProperty(c)&&(a[c]=b[c]);return a},extend:function(b,c){var d=b.prototype,e=function(){};e.prototype=d;var f;f=c.hasOwnProperty("constructor")?c.constructor:function(){d.constructor.apply(this,arguments)};var g=f.prototype=new e;return g.constructor=f,g.superclass=d,delete c.constructor,a.Util.assign(g,c),f},ellipsis:function(a,b,c){return a.length>b&&(c=null==c?"..":c,a=a.substring(0,b-c.length)+c),a},indexOf:function(a,b){if(Array.prototype.indexOf)return a.indexOf(b);for(var c=0,d=a.length;d>c;c++)if(a[c]===b)return c;return-1},splitAndCapture:function(a,b){if(!b.global)throw new Error("`splitRegex` must have the 'g' flag set");for(var c,d=[],e=0;c=b.exec(a);)d.push(a.substring(e,c.index)),d.push(c[0]),e=c.index+c[0].length;return d.push(a.substring(e)),d}},a.HtmlParser=a.Util.extend(Object,{htmlRegex:function(){var a=/[0-9a-zA-Z][0-9a-zA-Z:]*/,b=/[^\s\0"'>\/=\x01-\x1F\x7F]+/,c=/(?:".*?"|'.*?'|[^'"=<>`\s]+)/,d=b.source+"(?:\\s*=\\s*"+c.source+")?";return new RegExp(["(?:","<(!DOCTYPE)","(?:","\\s+","(?:",d,"|",c.source+")",")*",">",")","|","(?:","<(/)?","("+a.source+")","(?:","\\s+",d,")*","\\s*/?",">",")"].join(""),"gi")}(),parse:function(a,b){b=b||{};for(var c,d=b.processHtmlNode||function(){},e=b.processTextNode||function(){},f=this.htmlRegex,g=0;null!==(c=f.exec(a));){var h=c[0],i=c[1]||c[3],j=!!c[2],k=a.substring(g,c.index);k&&e(k),d(h,i.toLowerCase(),j),g=c.index+h.length}if(g<a.length){var l=a.substring(g);l&&e(l)}}}),a.HtmlTag=a.Util.extend(Object,{whitespaceRegex:/\s+/,constructor:function(b){a.Util.assign(this,b),this.innerHtml=this.innerHtml||this.innerHTML},setTagName:function(a){return this.tagName=a,this},getTagName:function(){return this.tagName||""},setAttr:function(a,b){var c=this.getAttrs();return c[a]=b,this},getAttr:function(a){return this.getAttrs()[a]},setAttrs:function(b){var c=this.getAttrs();return a.Util.assign(c,b),this},getAttrs:function(){return this.attrs||(this.attrs={})},setClass:function(a){return this.setAttr("class",a)},addClass:function(b){for(var c,d=this.getClass(),e=this.whitespaceRegex,f=a.Util.indexOf,g=d?d.split(e):[],h=b.split(e);c=h.shift();)-1===f(g,c)&&g.push(c);return this.getAttrs()["class"]=g.join(" "),this},removeClass:function(b){for(var c,d=this.getClass(),e=this.whitespaceRegex,f=a.Util.indexOf,g=d?d.split(e):[],h=b.split(e);g.length&&(c=h.shift());){var i=f(g,c);-1!==i&&g.splice(i,1)}return this.getAttrs()["class"]=g.join(" "),this},getClass:function(){return this.getAttrs()["class"]||""},hasClass:function(a){return-1!==(" "+this.getClass()+" ").indexOf(" "+a+" ")},setInnerHtml:function(a){return this.innerHtml=a,this},getInnerHtml:function(){return this.innerHtml||""},toString:function(){var a=this.getTagName(),b=this.buildAttrsStr();return b=b?" "+b:"",["<",a,b,">",this.getInnerHtml(),"</",a,">"].join("")},buildAttrsStr:function(){if(!this.attrs)return"";var a=this.getAttrs(),b=[];for(var c in a)a.hasOwnProperty(c)&&b.push(c+'="'+a[c]+'"');return b.join(" ")}}),a.MatchValidator=a.Util.extend(Object,{invalidProtocolRelMatchRegex:/^[\w]\/\//,hasFullProtocolRegex:/^[A-Za-z][-.+A-Za-z0-9]+:\/\//,uriSchemeRegex:/^[A-Za-z][-.+A-Za-z0-9]+:/,hasWordCharAfterProtocolRegex:/:[^\s]*?[A-Za-z]/,isValidMatch:function(a,b,c){return b&&!this.isValidUriScheme(b)||this.urlMatchDoesNotHaveProtocolOrDot(a,b)||this.urlMatchDoesNotHaveAtLeastOneWordChar(a,b)||this.isInvalidProtocolRelativeMatch(c)?!1:!0},isValidUriScheme:function(a){var b=a.match(this.uriSchemeRegex)[0];return"javascript:"!==b&&"vbscript:"!==b},urlMatchDoesNotHaveProtocolOrDot:function(a,b){return!(!a||b&&this.hasFullProtocolRegex.test(b)||-1!==a.indexOf("."))},urlMatchDoesNotHaveAtLeastOneWordChar:function(a,b){return a&&b?!this.hasWordCharAfterProtocolRegex.test(a):!1},isInvalidProtocolRelativeMatch:function(a){return!!a&&this.invalidProtocolRelMatchRegex.test(a)}}),a.AnchorTagBuilder=a.Util.extend(Object,{constructor:function(b){a.Util.assign(this,b)},build:function(b){var c=new a.HtmlTag({tagName:"a",attrs:this.createAttrs(b.getType(),b.getAnchorHref()),innerHtml:this.processAnchorText(b.getAnchorText())});return c},createAttrs:function(a,b){var c={href:b},d=this.createCssClass(a);return d&&(c["class"]=d),this.newWindow&&(c.target="_blank"),c},createCssClass:function(a){var b=this.className;return b?b+" "+b+"-"+a:""},processAnchorText:function(a){return a=this.doTruncate(a)},doTruncate:function(b){return a.Util.ellipsis(b,this.truncate||Number.POSITIVE_INFINITY)}}),a.match.Match=a.Util.extend(Object,{constructor:function(b){a.Util.assign(this,b)},getType:a.Util.abstractMethod,getMatchedText:function(){return this.matchedText},getAnchorHref:a.Util.abstractMethod,getAnchorText:a.Util.abstractMethod}),a.match.Email=a.Util.extend(a.match.Match,{getType:function(){return"email"},getEmail:function(){return this.email},getAnchorHref:function(){return"mailto:"+this.email},getAnchorText:function(){return this.email}}),a.match.Twitter=a.Util.extend(a.match.Match,{getType:function(){return"twitter"},getTwitterHandle:function(){return this.twitterHandle},getAnchorHref:function(){return"https://twitter.com/"+this.twitterHandle},getAnchorText:function(){return"@"+this.twitterHandle}}),a.match.Url=a.Util.extend(a.match.Match,{urlPrefixRegex:/^(https?:\/\/)?(www\.)?/i,protocolRelativeRegex:/^\/\//,protocolPrepended:!1,getType:function(){return"url"},getUrl:function(){var a=this.url;return this.protocolRelativeMatch||this.protocolUrlMatch||this.protocolPrepended||(a=this.url="http://"+a,this.protocolPrepended=!0),a},getAnchorHref:function(){var a=this.getUrl();return a.replace(/&amp;/g,"&")},getAnchorText:function(){var a=this.getUrl();return this.protocolRelativeMatch&&(a=this.stripProtocolRelativePrefix(a)),this.stripPrefix&&(a=this.stripUrlPrefix(a)),a=this.removeTrailingSlash(a)},stripUrlPrefix:function(a){return a.replace(this.urlPrefixRegex,"")},stripProtocolRelativePrefix:function(a){return a.replace(this.protocolRelativeRegex,"")},removeTrailingSlash:function(a){return"/"===a.charAt(a.length-1)&&(a=a.slice(0,-1)),a}}),a});
 
+			// Let's write an additional thing for multi-language text strings!
+			// I kinda wanted to call this i18n, but that's taken
+			var tran = {
+				strings: {
+					en: {
+						timeText: "Elapsed time | ",
+						wordCountText: "Word Count: ",
+						showHideButtonTitle: "Show/Hide dead players.",
+						flipsText: "Flips",
+						flipsTitle: "Lives gained by using all the bonus letters.",
+						uFlipsText: "U-Flips",
+						uFlipsTitle: "Lives gained whilst already at 3 lives, making the \"flip\" unnecessary",
+						deathsText: "Deaths",
+						deathsTitle: "Lives lost in this game",
+						playersTitle: "Players:",
+						chatDownButtonTitle: "Automatically scroll the chat down whenever there is a new message.",
+						autoFocusButtonTitle: "Automatically focus the chat box after your turn.",
+						dragButtonTitle: "Have the scoreboard be in a draggable container instead.",
+						overlaySettingsButtonTitle: "BombParty Overlay Settings",
+						overlaySettingsText: "Overlay Settings",
+						playerListText: "Current Players:",
+						creditsText: "Credits",
+						credits1: "Code Monkey",
+						credits2: "Code Master",
+						credits3: "Frenchifier",
+						creditsAutolinker: "Autolinker",
+						creditsTwitchEmotes: "Twitch Emotes",
+						creditsTextText: "With thanks to the English BombParty community",
+						containerSizeName: "Container Size",
+						containerSizeOptions: {
+							compact: "Compact Size",
+							fitToPlayers: "Fit To Players",
+						},
+						twitchEmotesName: "Twitch Emotes",
+						twitchEmotesOptions: {
+							on: "On",
+							off: "Off",
+						},
+						textAdventureName: "Text Adventure<sup>BETA</sup>",
+						textAdventureOptions: {
+							on: "On",
+							off: "Off",
+						},
+						hardModesName: "Hard Modes",
+						hardModesOptions: {
+							none: "None",
+							rev: "Reverse",
+							jqv: "J/Q/V",
+							az: "Alphabet",
+							xz: "X/Z",
+						},
+						themeName: "Theme<sup>BETA</sup>",
+						themeOptions: {
+							none: "None",
+							xmas: "Christmas",
+							custom: "Custom",
+						},
+						particlesName: "Particles",
+						particlesOptions: {
+							high: "High",
+							low: "Low",
+							off: "Off",
+						},
+						jqvText: "That word didn't contain J, Q nor V!",
+						azText: "You are on letter {l} Kappa!",
+						xzText: "That word didn't contain X nor Z!",
+						updateText: "New Update! (2015-01-04)<br />Added multi-language support for the French players.",
+					},
+					fr: {
+						timeText: "Temps Écoulé : ",
+						wordCountText: "Nombre de Mots : ",
+						showHideButtonTitle: "Afficher/Masquer les joueurs morts.",
+						flipsText: "V.R.",
+						flipsTitle: "Vies récupérées en utilisant toutes les lettres bonus",
+						uFlipsText: "V.R.I.",
+						uFlipsTitle: "Vies récupérées inutiles : vies récupérées tandis qu'on en possède trois, ce qui les rend \"inutiles\"",
+						deathsText: "Morts",
+						deathsTitle: "Vies perdues dans cette partie",
+						playersTitle: "Joueurs :",
+						chatDownButtonTitle: "Forcer le tchat à défiler vers le bas quand il y a un nouveau message.",
+						autoFocusButtonTitle: "Positionner automatiquement le curseur sur le tchat après son tour",
+						dragButtonTitle: "Détacher le tableau des scores.",
+						overlaySettingsButtonTitle: "Paramètres de l'Overlay",
+						overlaySettingsText: "Paramètres",
+						playerListText: "Joueurs connectés:",
+						creditsText: "Crédits",
+						credits1: "Code Monkey",
+						credits2: "Code Master",
+						credits3: "Traduction",
+						creditsAutolinker: "Liens automatiques",
+						creditsTwitchEmotes: "Emoticones Twitch",
+						creditsTextText: "Remerciements à la communauté anglaise de BombParty",
+						containerSizeName: "Taille du tableau",
+						containerSizeOptions: {
+							compact: "Compacte",
+							fitToPlayers: "Ajustée selon les joueurs",
+						},
+						twitchEmotesName: "Emoticones Twitch",
+						twitchEmotesOptions: {
+							on: "Marche",
+							off: "Arrêt",
+						},
+						textAdventureName: "Text Adventure<sup>BETA</sup>",
+						textAdventureOptions: {
+							on: "Marche",
+							off: "Arrêt",
+						},
+						hardModesName: "Difficultés supplémentaires",
+						hardModesOptions: {
+							none: "Aucune",
+							rev: "Inversé",
+							jqv: "J/Q/V",
+							az: "Alphabet",
+							xz: "X/Z",
+						},
+						themeName: "Thème<sup>BETA</sup>",
+						themeOptions: {
+							none: "Aucun",
+							xmas: "Noël",
+							custom: "Personnalisé",
+						},
+						customThemeName: "Thème Personnalisé",
+						particlesName: "Particules",
+						particlesOptions: {
+							high: "Elevée",
+							low: "Faible",
+							off: "Désactivée",
+						},
+						jqvText: "Ce mot ne contient ni J, ni V, ni Q.",
+						azText: "Au tour de la lettre {l} Kappa !",
+						xzText: "Ce mot ne contient ni X, ni Z !",
+						updateText: "Nouvelle mise à jour! (2015-01-04)<br />Ajout du support de la langue française.",
+					},
+				},
+				language: (document.cookie.indexOf("i18next=fr") !== -1 ? "fr" : "en"),
+				fallback: "en",
+				t: function (accessor) {
+					var rStr;
+					
+					try {
+						if ((rStr = eval("this.strings." + this.language + "." + accessor)) !== undefined) {
+							return rStr;
+						}
+					}
+					catch (e) {
+						if (!(e instanceof TypeError)) {
+							throw e;
+						}
+					}
+					
+					try {
+						if ((rStr = eval("this.strings." + this.fallback + "." + accessor)) !== undefined) {
+							return rStr;
+						}		
+					}
+					catch (e) {
+						if (!(e instanceof TypeError)) {
+							throw e;
+						}
+					}
+					
+					return accessor;
+				},
+			};
+			
 			// Tidy container for storing "global" variables.
 			bpOverlay = {
 				playerNames: {}, // Stores player name by actor index
@@ -1213,7 +1378,7 @@ var source = function() {
 
 				// More resetting...
 				bpOverlay.wordCount = 0;
-				bpOverlay.timeText = "Elapsed time | 0:00";
+				bpOverlay.timeText = tran.t("timeText") + "0:00";
 
 				var d = new Date();
 				bpOverlay.startTime = d.getTime();
@@ -1235,7 +1400,7 @@ var source = function() {
 				wordCounterElement.align = "center";
 				wordCounterElement.id = "infoWordCounter";
 				wordCounterElement.style.color = "rgb(200,200,200)";
-				wordCounterElement.textContent = "Word Count: 0";
+				wordCounterElement.textContent = tran.t("wordCountText") + "0";
 				infoBox.appendChild(wordCounterElement);
 
 				// Oh boy, a horizontal rule!	Gee willikers!
@@ -1275,7 +1440,7 @@ var source = function() {
 				showHideButtonDiv.className = "headerButtonDiv";
 				showHideButton.id = "autoFocusButton";
 				showHideButton.className = "headerButton";
-				showHideButton.title = "Show/Hide dead players.";
+				showHideButton.title = tran.t("showHideButtonTitle");
 
 				showHideButton.onclick = function() {
 					// Flip the state of hideDead
@@ -1338,31 +1503,31 @@ var source = function() {
 
 				// Make headers for the columns, and append to the first row
 				var flipColumnHeader = document.createElement("td");
-				flipColumnHeader.textContent = "Flips";
+				flipColumnHeader.textContent = tran.t("flipsText");;
 				flipColumnHeader.style.color = "rgb(200,200,200)";
 				flipColumnHeader.align = "center";
 				flipColumnHeader.style.padding = "2px";
 				flipColumnHeader.style.fontSize = "11px";
 				flipColumnHeader.style.width = "40px";
-				flipColumnHeader.title = "Lives gained by using all the bonus letters.";
+				flipColumnHeader.title = tran.t("flipsTitle");
 				firstRow.appendChild(flipColumnHeader);
 				var uFlipColumnHeader = document.createElement("td");
-				uFlipColumnHeader.textContent = "U-Flips";
+				uFlipColumnHeader.textContent = tran.t("uFlipsText");
 				uFlipColumnHeader.style.color = "rgb(200,200,200)";
 				uFlipColumnHeader.align = "center";
 				uFlipColumnHeader.style.padding = "2px";
 				uFlipColumnHeader.style.fontSize = "11px";
 				uFlipColumnHeader.style.width = "40px";
-				uFlipColumnHeader.title = "Lives gained whilst already at 3 lives, making the \"flip\" unnecessary.";
+				uFlipColumnHeader.title = tran.t("uFlipsTitle");
 				firstRow.appendChild(uFlipColumnHeader);
 				var lostLivesColumnHeader = document.createElement("td");
-				lostLivesColumnHeader.textContent = "Deaths";
+				lostLivesColumnHeader.textContent = tran.t("deathsText");
 				lostLivesColumnHeader.style.color = "rgb(200,200,200)";
 				lostLivesColumnHeader.align = "center";
 				lostLivesColumnHeader.style.padding = "2px";
 				lostLivesColumnHeader.style.fontSize = "11px";
 				lostLivesColumnHeader.style.width = "40px";
-				lostLivesColumnHeader.title = "Lives lost in this game.";
+				lostLivesColumnHeader.title = tran.t("deathsTitle");
 				firstRow.appendChild(lostLivesColumnHeader);
 				infoTable.appendChild(firstRow);
 
@@ -1555,7 +1720,7 @@ var source = function() {
 						var formatter = "";
 					}
 
-					bpOverlay.timeText = "Elapsed time | " + Math.floor(seconds / 60) + ":" + formatter + "" + (seconds % 60) + "";
+					bpOverlay.timeText = tran.t("timeText") + Math.floor(seconds / 60) + ":" + formatter + "" + (seconds % 60) + "";
 
 					// Umm, hmm, this if statement is redundant.
 					// It looks like it anyway.
@@ -1997,7 +2162,7 @@ var source = function() {
 						// Add one to the word count, and update the box if it's been created
 						bpOverlay.wordCount += 1;
 						if (bpOverlay.boxHasBeenCreated || bpOverlay.dragBoxHasBeenCreated) {
-							document.getElementById("infoWordCounter").textContent = "Word Count: " + bpOverlay.wordCount;
+							document.getElementById("infoWordCounter").textContent = tran.t("wordCountText") + bpOverlay.wordCount;
 						}
 
 						//Let the player get more alphabets
@@ -2122,7 +2287,7 @@ var source = function() {
 				// Double function: construct the player list in the leaderboards tab
 				var changePlayerText = function() {
 					var playerCount = document.getElementsByClassName("ChannelUsers")[0];
-					var title = "Players:";
+					var title = tran.t("playersTitle");
 					for (var i in channel.data.users) {
 						title += "\n" + channel.data.users[i].displayName;
 					}
@@ -2216,7 +2381,7 @@ var source = function() {
 				makeHeaderButton(bpOverlayImgs.on,
 					bpOverlayImgs.off,
 					"chatDownButton",
-					"Automatically scroll the chat down whenever there is a new message.",
+					tran.t("chatDownButtonTitle"),
 					true, //Because we want the onImg displayed at creation
 					//Then the function within this function
 					function() {
@@ -2241,7 +2406,7 @@ var source = function() {
 				makeHeaderButton(bpOverlayImgs.autoFocusOn,
 					bpOverlayImgs.autoFocusOff,
 					"autoFocusButton",
-					"Automatically focus the chat box after your turn.",
+					tran.t("autoFocusButtonTitle"),
 					true,
 					function() {
 						// Flip the autoFocus property
@@ -2265,7 +2430,7 @@ var source = function() {
 				makeHeaderButton(bpOverlayImgs.dragOn,
 					bpOverlayImgs.dragOff,
 					"dragButton",
-					"Have the info be in a draggable container instead",
+					tran.t("dragButtonTitle"),
 					false,
 					function() {
 						//We don't want the button to react if the neither of the boxes have been created
@@ -2345,7 +2510,7 @@ var source = function() {
 				overlaySettingsButton.id="overlaySettingsButton";
 				overlaySettingsButton.setAttribute("class", "");					//We don't want it to start active
 				overlaySettingsButton.innerHTML="BpOS";
-				overlaySettingsButton.title="Bompbarty Overlay Settings"; 
+				overlaySettingsButton.title=tran.t("overlaySettingsButtonTitle"); 
 
 				//Appendum les shittendum
 				sideButtons.appendChild(overlaySettingsButton);
@@ -2370,7 +2535,7 @@ var source = function() {
 				//We only want this once (I believe) so this is outside of a function
 				//Generate the overlay section and append it to the SettingsTab
 				var bpOverlayH2 = document.createElement("H2");
-				bpOverlayH2.textContent = "Overlay Settings";
+				bpOverlayH2.textContent = tran.t("overlaySettingsText");
 				var settingsTab = document.getElementById("overlaySettingsTab");
 				settingsTab.appendChild(bpOverlayH2);
 				
@@ -2383,7 +2548,7 @@ var source = function() {
 
 				// Might as well have the current players in here
 				var playerListH2 = document.createElement("H2");
-				playerListH2.textContent = "Current Players";
+				playerListH2.textContent = tran.t("playerListText");
 				settingsTab.appendChild(playerListH2);
 				
 				var playerListDiv = document.createElement("DIV");
@@ -2393,24 +2558,30 @@ var source = function() {
 				
 				// A little attribution table
 				var creditsH2 = document.createElement("H2");
-				creditsH2.textContent = "Credits";
+				creditsH2.textContent = tran.t("creditsText");
 				settingsTab.appendChild(creditsH2);
 				
 				var creditsTable = document.createElement("TABLE");
 				creditsTable.id = "creditsTable";
 				creditsTable.innerHTML = "\
-				<tr><td>Code Monkey</td><td>MrInanimated</td></tr>\
-				<tr><td>Code Master</td><td>Skandalabrandur</td></tr>\
-				<tr><td>Autolinker</td><td><a href=\"https://github.com/gregjacobs/Autolinker.js\">Autolinker.js</a></td></tr>\
-				<tr><td>Twitch Emotes</td><td><a href=\"http://twitchemotes.com/\">twitchemotes.com</a></td></tr>";
+				<tr><td>" + tran.t("credits1") + "</td><td>MrInanimated</td></tr>\
+				<tr><td>" + tran.t("credits2") + "</td><td>Skandalabrandur</td></tr>\
+				<tr><td>" + tran.t("credits3") + "</td><td>Sanc</td></tr>\
+				<tr><td>" + tran.t("creditsAutolinker") + "</td><td><a href=\"https://github.com/gregjacobs/Autolinker.js\">Autolinker.js</a></td></tr>\
+				<tr><td>" + tran.t("creditsTwitchEmotes") + "</td><td><a href=\"http://twitchemotes.com/\">twitchemotes.com</a></td></tr>";
 				settingsTab.appendChild(creditsTable);
 				
 				var creditsText = document.createElement("DIV");
-				creditsText.textContent = "With thanks to the English BombParty community";
+				creditsText.textContent = tran.t("creditsTextText");
 				creditsText.style.marginLeft = "8px";
 				settingsTab.appendChild(creditsText);
 				
-				generateSettingsElement("Container Size", {compact: "Compact size", fitToPlayers: "Fit To Players"}, "containerSelect", 
+				generateSettingsElement(tran.t("containerSizeName"),
+					{
+						compact: tran.t("containerSizeOptions.compact"),
+						fitToPlayers: tran.t("containerSizeOptions.fitToPlayers")
+					},
+					"containerSelect", 
 					function () {
 						//Get the infoTableDiv element and the selector created with the id 'containerSelect'
 						var infoTableDiv = document.getElementsByClassName("infoTableDiv")[0];
@@ -2438,7 +2609,13 @@ var source = function() {
 				);
 				
 				// Twitch Emote settings
-				generateSettingsElement("Twitch Emotes", {on: "On", off: "Off"}, "twitchEmoteSelect",
+				generateSettingsElement(
+					tran.t("twitchEmotesName"),
+					{
+						on: tran.t("twitchEmotesOptions.on"),
+						off: tran.t("twitchEmotesOptions.off")
+					},
+					"twitchEmoteSelect",
 					function () {
 						var teSelect = document.getElementById("twitchEmoteSelect");
 						
@@ -2455,7 +2632,13 @@ var source = function() {
 		
 			
 				//The text adventure setting
-				generateSettingsElement("Text Adventure<sup>BETA</sup>", {off: "Off", on: "On"}, "adventureSetting",
+				generateSettingsElement(
+					tran.t("textAdventureName"),
+					{
+						off: tran.t("textAdventureOptions.off"),
+						on: tran.t("textAdventureOptions.on")
+					},
+					"adventureSetting",
 					function() {
 						var sTabSelect = document.getElementById("adventureSetting");
 						if(sTabSelect.value === "on") {
@@ -2468,7 +2651,16 @@ var source = function() {
 					}
 				);
 
-				generateSettingsElement("Hard modes", {none: "None", rev: "Reverse", jqv: "J/Q/V", az: "Alphabet", xz: "X/Z"}, "hardModes",
+				generateSettingsElement(
+					tran.t("hardModesName"),
+					{
+						none: tran.t("hardModesOptions.none"),
+						rev: tran.t("hardModesOptions.rev"),
+						jqv: tran.t("hardModesOptions.jqv"),
+						az: tran.t("hardModesOptions.az"),
+						xz: tran.t("hardModesOptions.xz")
+					},
+					"hardModes",
 					function() {
 						var sTabSelect = document.getElementById("hardModes");
 						if(sTabSelect.value === "rev") {
@@ -2484,7 +2676,7 @@ var source = function() {
 							var checkLetter = function() {
 								var inValue = document.getElementById("WordInputBox").value.toLowerCase();
 								if(!((inValue.indexOf("q") > -1) || (inValue.indexOf("v") > -1) || (inValue.indexOf("j") > -1))) {
-									document.getElementById("WordInputBox").value = "This word didn't contain j, v nor q!";
+									document.getElementById("WordInputBox").value = tran.t("jqvText");
 								}
 								
 							}
@@ -2496,7 +2688,7 @@ var source = function() {
 							var checkLetter = function() {
 								var inValue = document.getElementById("WordInputBox").value.toLowerCase();
 								if(!(inValue[0] === bpOverlay.alphabet[bpOverlay.alphapos])) {
-									document.getElementById("WordInputBox").value="You are on letter " + bpOverlay.alphabet[bpOverlay.alphapos] + " kappa!";
+									document.getElementById("WordInputBox").value=tran.t("azText").replace("{l}", bpOverlay.alphabet[bpOverlay.alphapos]);
 								} 
 							}
 							wordInputBox.onchange=checkLetter;
@@ -2506,7 +2698,7 @@ var source = function() {
 							var checkLetter = function() {
 								var inValue = document.getElementById("WordInputBox").value.toLowerCase();
 								if(!((inValue.indexOf("x") > -1) || (inValue.indexOf("z") > -1))) {
-									document.getElementById("WordInputBox").value = "This word didn't contain x nor z!";
+									document.getElementById("WordInputBox").value = tran.t("xzText");
 								}
 								
 							}
@@ -2518,25 +2710,29 @@ var source = function() {
 					}
 				);							
 				
-				generateSettingsElement("Theme<sup>BETA</sup>", {
-					none: "None",
-					"https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/themes/xmas/xmas.json": "Christmas",
-					custom: "Custom",
-				}, "themeSelect", function () {
-					var themeSelect = document.getElementById("themeSelect");
-					if (themeSelect.value === "none") {
-						loadCustomTheme(false);
-						document.getElementById("customThemeRow").style.display = "none";
-					}
-					else if (themeSelect.value === "custom") {
-						document.getElementById("customThemeRow").style.display = "";
-					}
-					else {
-						document.getElementById("customThemeRow").style.display = "none";
-					}
-					
-					// Handling the URLs have to be done outside this code
-					// Because it needs access to GM_xmlhttpRequest
+				generateSettingsElement(
+					tran.t("themeName"),
+					{
+						none: tran.t("themeOptions.none"),
+						"https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/themes/xmas/xmas.json": tran.t("themeOptions.xmas"),
+						custom: tran.t("themeOptions.custom"),
+					},
+					"themeSelect",
+					function () {
+						var themeSelect = document.getElementById("themeSelect");
+						if (themeSelect.value === "none") {
+							loadCustomTheme(false);
+							document.getElementById("customThemeRow").style.display = "none";
+						}
+						else if (themeSelect.value === "custom") {
+							document.getElementById("customThemeRow").style.display = "";
+						}
+						else {
+							document.getElementById("customThemeRow").style.display = "none";
+						}
+						
+						// Handling the URLs have to be done outside this code
+						// Because it needs access to GM_xmlhttpRequest
 					
 				});
 				
@@ -2550,7 +2746,7 @@ var source = function() {
 					sTabTr.style.display = "none";
 					sTabTable.appendChild(sTabTr);
 					var sTabTd = document.createElement("TD");
-					sTabTd.innerHTML = "Custom Theme";
+					sTabTd.innerHTML = tran.t("customThemeName");
 					sTabTr.appendChild(sTabTd);
 					var sTabOptionsTd = document.createElement("TD");
 					sTabTr.appendChild(sTabOptionsTd);
@@ -2559,7 +2755,14 @@ var source = function() {
 					sTabOptionsTd.appendChild(sTabInput);
 				})();
 				
-				generateSettingsElement("Particles", {high: "High", low: "Low", off: "Off"}, "particleSelect",
+				generateSettingsElement(
+					tran.t("particlesName"),
+					{
+						high: tran.t("particlesOptions.high"),
+						low: tran.t("particlesOptions.low"),
+						off: tran.t("particlesOptions.off")
+					},
+					"particleSelect",
 					function () {
 						var sTabSelect = document.getElementById("particleSelect");
 						if(sTabSelect.value === "high") {
@@ -2582,7 +2785,7 @@ var source = function() {
 			setInterval(updateTime, 1000);
 
 			// "Update Text"
-			channel.appendToChat("Info", "New Update! (2014-01-03):<br />Small bugfix in loading offsets.<br />Custom themes should now save accross sessions.");
+			channel.appendToChat("Info", tran.t("updateText"));
 		}
 		main();
 	}
