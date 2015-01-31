@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         BombParty Overlay
-// @version      1.4.0
+// @version      1.4.1
 // @description  Overlay + Utilities for BombParty!
 // @icon         https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/dist/icon.png
 // @icon64       https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/dist/icon64.png
@@ -2867,7 +2867,14 @@ var source = function() {
 					var sTabInput = document.createElement("INPUT");
 					sTabInput.id = "notificationAliasInput";
 					sTabInput.addEventListener("change", function (e) {
-						bpOverlay.alias = sTabInput.value.toLowerCase().split(";");
+						var n = sTabInput.value.toLowerCase().split(";");
+						bpOverlay.alias = [];
+						var i = 0;
+						for (; i < n.length; i++) {
+							if (n[i] !== "") {
+								bpOverlay.alias.push(n[i]);
+							}
+						}
 					});
 					sTabInput.title = tran.t("notificationAliasInputTitle");
 					sTabOptionsTd.appendChild(sTabInput);
