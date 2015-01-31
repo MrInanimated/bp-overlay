@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         BombParty Overlay
-// @version      1.4.1
+// @version      1.4.2
 // @description  Overlay + Utilities for BombParty!
 // @icon         https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/dist/icon.png
 // @icon64       https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/dist/icon64.png
@@ -1847,24 +1847,31 @@ var source = function() {
 				channel.socket.listeners("chatMessage").pop();
 				channel.socket.on("chatMessage", function(e) {
 					var notified = false;
+					var index;
 					if (e.text) {
 						var lowercaseText = e.text.toLowerCase();
 						if (bpOverlay.notifications) {
-							if (lowercaseText.search(new RegExp("\\b" + app.user.displayName.toLowerCase() + "\\b")) !== -1) {
-								if (document.hidden) {
-									bpOverlay.notificationSound.play();
+							if ((index = lowercaseText.indexOf(app.user.displayName.toLowerCase())) !== -1) {
+								if ((index === 0 || lowercaseText[index-1].search(/\W/) !== -1) &&
+									(index + app.user.displayName.length >= lowercaseText.length || lowercaseText[index + app.user.displayName.length].search(/\W/) !== -1)) {
+									if (document.hidden) {
+										bpOverlay.notificationSound.play();
+									}
+									notified = true;
 								}
-								notified = true;
 							}
 							else {
 								var i = 0;
 								for (; i < bpOverlay.alias.length; i++) {
-									if (lowercaseText.search(new RegExp("\\b" + bpOverlay.alias[i] + "\\b")) !== -1) {
-										if (document.hidden) {
-											bpOverlay.notificationSound.play();
+									if ((index = lowercaseText.indexOf(bpOverlay.alias[i])) !== -1) {
+										if ((index === 0 || lowercaseText[index-1].search(/\W/) !== -1) &&
+											(index + bpOverlay.alias[i].length >= lowercaseText.length || lowercaseText[index + bpOverlay.alias[i].length].search(/\W/) !== -1)) {
+											if (document.hidden) {
+												bpOverlay.notificationSound.play();
+											}
+											notified = true;
+											break;
 										}
-										notified = true;
-										break;
 									}
 								}
 							}
