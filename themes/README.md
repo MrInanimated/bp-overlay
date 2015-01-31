@@ -1,7 +1,7 @@
 Custom Themes
 =============
 
-This experimental version of the overlay is able to to read custom themes and apply them to the game.
+The overlay is able to to read custom themes and apply them to the game.
 
 The way this works is that the overlay reads a JSON file which specifies the replacement images, replacement css, particles and text styles.
 

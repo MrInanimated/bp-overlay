@@ -1,11 +1,11 @@
 // ==UserScript==
 // @name         BombParty Overlay
-// @version      1.3.9
+// @version      1.4.0
 // @description  Overlay + Utilities for BombParty!
 // @icon         https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/dist/icon.png
 // @icon64       https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/dist/icon64.png
 // @downloadURL  https://github.com/MrInanimated/bp-overlay/raw/master/dist/bpoverlay.user.js
-// @author       Tianlin Zhang and Skandalabrandur
+// @author       MrInanimated and Skandalabrandur
 // @match        http://bombparty.sparklinlabs.com/play/*
 // @resource     twitch_global http://twitchemotes.com/global.json
 // @resource     twitch_subscriber http://twitchemotes.com/subscriber.json
@@ -58,7 +58,7 @@ var source = function() {
 			// Since this is running via a script loaded on page load, it's difficult ensure the overlay runs after everything has loaded
 			// This piece of code makes sure that all relevant things are loaded before executing the rest of the code
 			// We may need to add more to this long-ass if statement if we add more features in the future
-			if (!(window.hasOwnProperty("channel") && channel.socket && channel.data && channel.appendToChat && channel.socket.listeners("setActivePlayerIndex").length && channel.socket.listeners("winWord").length && channel.socket.listeners("setPlayerLives").length && channel.socket.listeners("setPlayerState").length && channel.socket.listeners("endGame").length && window.hasOwnProperty("JST") && JST["nuclearnode/chatMessage"] && document.getElementById("Sidebar") && document.getElementById("ChatLog"))) {
+			if (!(window.hasOwnProperty("channel") && channel.socket && channel.data && channel.appendToChat && channel.socket.listeners("chatMessage").length && channel.socket.listeners("setActivePlayerIndex").length && channel.socket.listeners("winWord").length && channel.socket.listeners("setPlayerLives").length && channel.socket.listeners("setPlayerState").length && channel.socket.listeners("endGame").length && window.hasOwnProperty("JST") && JST["nuclearnode/chatMessage"] && document.getElementById("Sidebar") && document.getElementById("ChatLog"))) {
 				console.log("Everything's not loaded yet, trying again in a second...");
 				setTimeout(main, 1000);
 				return;
@@ -95,7 +95,7 @@ var source = function() {
 						dragButtonTitle: "Have the scoreboard be in a draggable container instead.",
 						overlaySettingsButtonTitle: "BombParty Overlay Settings",
 						overlaySettingsText: "Overlay Settings",
-						playerListText: "Current Players:",
+						playerListText: "Current Players",
 						creditsText: "Credits",
 						credits1: "Code Monkey",
 						credits2: "Code Master",
@@ -138,10 +138,18 @@ var source = function() {
 							low: "Low",
 							off: "Off",
 						},
+						notificationsName: "Notifications",
+						notificationOptions: {
+							on: "On",
+							off: "Off",
+						},
+						notificationAlias: "Aliases",
+						notificationAliasTitle: "Custom names that also trigger a notification.",
+						notificationAliasInputTitle: "Write your names one after another separated by semicolons here. e.g. MrInanimated;Inanimated;Animé;Inny",
 						jqvText: "That word didn't contain J, Q nor V!",
 						azText: "You are on letter {l} Kappa!",
 						xzText: "That word didn't contain X nor Z!",
-						updateText: "New Update! (2015-01-04)<br />Added multi-language support for the French players.",
+						updateText: "New Update! (2015-01-31)<br />A notification sound now plays when this tab is inactive and someone says your name in chat. (You can turn it off in the settings.)",
 					},
 					fr: {
 						timeText: "Temps Écoulé : ",
@@ -153,7 +161,7 @@ var source = function() {
 						uFlipsTitle: "Vies récupérées inutiles : vies récupérées tandis qu'on en possède trois, ce qui les rend \"inutiles\"",
 						deathsText: "Morts",
 						deathsTitle: "Vies perdues dans cette partie",
-						playersTitle: "Joueurs :",
+						playersTitle: "Joueurs",
 						chatDownButtonTitle: "Forcer le tchat à défiler vers le bas quand il y a un nouveau message.",
 						autoFocusButtonTitle: "Positionner automatiquement le curseur sur le tchat après son tour",
 						dragButtonTitle: "Détacher le tableau des scores.",
@@ -199,14 +207,22 @@ var source = function() {
 						customThemeName: "Thème Personnalisé",
 						particlesName: "Particules",
 						particlesOptions: {
-							high: "Elevée",
+							high: "Elevé",
 							low: "Faible",
-							off: "Désactivée",
+							off: "Désactivé",
 						},
+						notificationsName: "Notifications",
+						notificationOptions: {
+							on: "Activé",
+							off: "Désactivé",
+						},
+						notificationAlias: "Pseudonymes",
+						notificationAliasTitle: "Noms personnalisés qui déclenchent également une notification.",
+						notificationAliasInputTitle: "Ecrivez vos noms l'un après l'autre, séparés par un point virgule. Par ex. MrInanimated;Inanimated;Animé;Inny",
 						jqvText: "Ce mot ne contient ni J, ni V, ni Q.",
 						azText: "Au tour de la lettre {l} Kappa !",
 						xzText: "Ce mot ne contient ni X, ni Z !",
-						updateText: "Nouvelle mise à jour! (2015-01-04)<br />Ajout du support de la langue française.",
+						updateText: "Nouvelle mise à jour! (2015-01-31)<br />Un son se joue lorsque l'onglet est inactif et que quelqu'un écrit votre nom dans le chat (vous pouvez désactiver cette option dans les paramètres)",
 					},
 				},
 				language: (document.cookie.indexOf("i18next=fr") !== -1 ? "fr" : "en"),
@@ -286,6 +302,10 @@ var source = function() {
 				
 				isThemed: false,  // Is the game currently themed
 				particleSpawnRate: "high",
+				
+				alias: [],
+				notificationSound: new Audio("http://bombparty.sparklinlabs.com/sounds/myTurn.wav"),
+				notifications: true,
 			};
 			
 			// Store all the game images so they can be changed
@@ -1823,12 +1843,51 @@ var source = function() {
 					return val;
 				};
 			
+				// I guess I'm wrapping this as well
+				channel.socket.listeners("chatMessage").pop();
+				channel.socket.on("chatMessage", function(e) {
+					var notified = false;
+					if (e.text) {
+						var lowercaseText = e.text.toLowerCase();
+						if (bpOverlay.notifications) {
+							if (lowercaseText.search(new RegExp("\\b" + app.user.displayName.toLowerCase() + "\\b")) !== -1) {
+								if (document.hidden) {
+									bpOverlay.notificationSound.play();
+								}
+								notified = true;
+							}
+							else {
+								var i = 0;
+								for (; i < bpOverlay.alias.length; i++) {
+									if (lowercaseText.search(new RegExp("\\b" + bpOverlay.alias[i] + "\\b")) !== -1) {
+										if (document.hidden) {
+											bpOverlay.notificationSound.play();
+										}
+										notified = true;
+										break;
+									}
+								}
+							}
+						}
+					}
+				
+					null != e.userAuthId ? channel.appendToChat("Message Author-" + e.userAuthId.replace(/:/g, "_") + (notified ? " highlighted" : ""), JST["nuclearnode/chatMessage"]({
+						text: e.text,
+						author: JST["nuclearnode/chatUser"]({
+							user: channel.data.usersByAuthId[e.userAuthId],
+							i18n: i18n,
+							app: app
+						})
+					})) : channel.appendToChat("Info" + (notified ? " highlighted" : ""), i18n.t("nuclearnode:chat." + e.text))
+				});
+			
 				// Screw your function for handling chat messages, Elisee
 				// I'm going to make a better one! With blackjack! And hookers!
 				JST["nuclearnode/chatMessage"] = function (e) {
 					var t;
 					var a = [];
 					var n = e || {};
+					
 					return function (e, n) {
 						a.push(
 							(null == (t = e) ? "" : t) +
@@ -2360,7 +2419,7 @@ var source = function() {
 				// Probably a better way of doing this
 				// Lol. TFW web-console css is hard
 				var style = document.createElement('style');
-				style.appendChild(document.createTextNode('.headerButtonDiv {  display: -webkit-box;  display: -moz-box;  display: -webkit-flex;  display: -ms-flexbox;  display: box;  display: flex;  opacity: 0.3;  -ms-filter: "progid:DXImageTransform.Microsoft.Alpha(Opacity=30)";  filter: alpha(opacity=30);} .headerButtonDiv:hover {  opacity: 1;  -ms-filter: none;  filter: none;} button.headerButton {  border: none;  background: none;  cursor: pointer;  opacity: 0.5;  -ms-filter: "progid:DXImageTransform.Microsoft.Alpha(Opacity=50)";  filter: alpha(opacity=50);  display: -webkit-box;  display: -moz-box;  display: -webkit-flex;  display: -ms-flexbox;  display: box;  display: flex;} button.headerButton:hover {  opacity: 0.8;  -ms-filter: "progid:DXImageTransform.Microsoft.Alpha(Opacity=80)";  filter: alpha(opacity=80);} button.headerButton:active {  opacity: 1;  -ms-filter: none;  filter: none;} .infoTableDiv::-webkit-scrollbar { width: 15px; height: 15px; } .infoTableDiv::-webkit-scrollbar-button { height: 0px; width: 0px; } .infoTableDiv::-webkit-scrollbar-track { background-color: rgba(0,0,0,0.05); } .infoTableDiv::-webkit-scrollbar-thumb { background-color: rgba(255,255,255,0.1); border: 3px solid transparent; -webkit-border-radius: 6px; border-radius: 6px; -webkit-background-clip: content; -moz-background-clip: content; background-clip: content-box; } .infoTableDiv::-webkit-scrollbar-thumb:hover { background-color: rgba(255,255,255,0.15); } .infoTableDiv::-webkit-scrollbar-corner { background-color: rgba(255,255,255,0.1); }#overlaySettingsTab{text-align:left;overflow-y:auto}#overlaySettingsTab h2{padding:.5em .5em 0;opacity:.5;-ms-filter:"alpha(Opacity=50)";filter:alpha(opacity=50)}#overlaySettingsTab table{width:100%;padding:.5em}#overlaySettingsTab table tr td:nth-child(1){width:40%}#overlaySettingsTab table tr td:nth-child(2){width:60%}#overlaySettingsTab table button:not(.UnbanUser),#overlaySettingsTab table input,#overlaySettingsTab table select,#overlaySettingsTab table textarea{width:100%;background:#444;border:none;padding:.25em;color:#fff;font:inherit}#overlaySettingsTab table textarea{resize:vertical;min-height:3em}#overlaySettingsTab table ul{list-style:none}#overlaySettingsTab .User .UserRole_hubAdministrator:before{content:\'[★]\';cursor:default;color:#c63}#overlaySettingsTab .User .UserRole_host:before{content:\'★\';cursor:default;color:#dc8}#overlaySettingsTab .User .UserRole_administrator:before{content:\'☆\';cursor:default;color:#dc8}#overlaySettingsTab .User .UserRole_moderator:before{content:\'●\';cursor:default;color:#346192}#overlaySettingsTab .Actions button{border:none;background:0 0;cursor:pointer;margin:0 .25em;outline:0;font-weight:400;font-size:smaller;opacity:.8;-ms-filter:"alpha(Opacity=80)";filter:alpha(opacity=80)}#overlaySettingsTab .Actions button.BanUser{color:#a00}#overlaySettingsTab .Actions button.ModUser,#overlaySettingsTab .Actions button.UnmodUser{color:#2a3}#overlaySettingsTab .Actions button:hover{opacity:1;-ms-filter:none;filter:none}#overlaySettingsTab .Actions button:active{background:rgba(255,0,0,.2)}'));
+				style.appendChild(document.createTextNode('.headerButtonDiv {  display: -webkit-box;  display: -moz-box;  display: -webkit-flex;  display: -ms-flexbox;  display: box;  display: flex;  opacity: 0.3;  -ms-filter: "progid:DXImageTransform.Microsoft.Alpha(Opacity=30)";  filter: alpha(opacity=30);} .headerButtonDiv:hover {  opacity: 1;  -ms-filter: none;  filter: none;} button.headerButton {  border: none;  background: none;  cursor: pointer;  opacity: 0.5;  -ms-filter: "progid:DXImageTransform.Microsoft.Alpha(Opacity=50)";  filter: alpha(opacity=50);  display: -webkit-box;  display: -moz-box;  display: -webkit-flex;  display: -ms-flexbox;  display: box;  display: flex;} button.headerButton:hover {  opacity: 0.8;  -ms-filter: "progid:DXImageTransform.Microsoft.Alpha(Opacity=80)";  filter: alpha(opacity=80);} button.headerButton:active {  opacity: 1;  -ms-filter: none;  filter: none;} .infoTableDiv::-webkit-scrollbar { width: 15px; height: 15px; } .infoTableDiv::-webkit-scrollbar-button { height: 0px; width: 0px; } .infoTableDiv::-webkit-scrollbar-track { background-color: rgba(0,0,0,0.05); } .infoTableDiv::-webkit-scrollbar-thumb { background-color: rgba(255,255,255,0.1); border: 3px solid transparent; -webkit-border-radius: 6px; border-radius: 6px; -webkit-background-clip: content; -moz-background-clip: content; background-clip: content-box; } .infoTableDiv::-webkit-scrollbar-thumb:hover { background-color: rgba(255,255,255,0.15); } .infoTableDiv::-webkit-scrollbar-corner { background-color: rgba(255,255,255,0.1); }#overlaySettingsTab{text-align:left;overflow-y:auto}#overlaySettingsTab h2{padding:.5em .5em 0;opacity:.5;-ms-filter:"alpha(Opacity=50)";filter:alpha(opacity=50)}#overlaySettingsTab table{width:100%;padding:.5em}#overlaySettingsTab table tr td:nth-child(1){width:40%}#overlaySettingsTab table tr td:nth-child(2){width:60%}#overlaySettingsTab table button:not(.UnbanUser),#overlaySettingsTab table input,#overlaySettingsTab table select,#overlaySettingsTab table textarea{width:100%;background:#444;border:none;padding:.25em;color:#fff;font:inherit}#overlaySettingsTab table textarea{resize:vertical;min-height:3em}#overlaySettingsTab table ul{list-style:none}#overlaySettingsTab .User .UserRole_hubAdministrator:before{content:\'[★]\';cursor:default;color:#c63}#overlaySettingsTab .User .UserRole_host:before{content:\'★\';cursor:default;color:#dc8}#overlaySettingsTab .User .UserRole_administrator:before{content:\'☆\';cursor:default;color:#dc8}#overlaySettingsTab .User .UserRole_moderator:before{content:\'●\';cursor:default;color:#346192}#overlaySettingsTab .Actions button{border:none;background:0 0;cursor:pointer;margin:0 .25em;outline:0;font-weight:400;font-size:smaller;opacity:.8;-ms-filter:"alpha(Opacity=80)";filter:alpha(opacity=80)}#overlaySettingsTab .Actions button.BanUser{color:#a00}#overlaySettingsTab .Actions button.ModUser,#overlaySettingsTab .Actions button.UnmodUser{color:#2a3}#overlaySettingsTab .Actions button:hover{opacity:1;-ms-filter:none;filter:none}#overlaySettingsTab .Actions button:active{background:rgba(255,0,0,.2)}#ChatLog .highlighted{background: rgba(255, 0, 0, 0.05);}#ChatLog .highlighted:hover {background: rgba(255, 0, 0, 0.1);}'));
 				document.getElementsByTagName('head')[0].appendChild(style);
 				
 				// Load the hideDead on/off images
@@ -2775,6 +2834,45 @@ var source = function() {
 					}
 				);
 				
+				generateSettingsElement(
+					tran.t("notificationsName"),
+					{
+						on: tran.t("notificationOptions.on"),
+						off: tran.t("notificationOptions.off"),
+					},
+					"notificationsSelect",
+					function () {
+						var sTabSelect = document.getElementById("notificationsSelect");
+						if (sTabSelect.value == "on") {
+							bpOverlay.notifications = true;
+						}
+						else {
+							bpOverlay.notifications = false;
+						}
+					}
+				);
+				
+				// And another, because this one's an input
+				(function () {
+					var sTabTable = document.getElementById("overlaySettingsTable");
+					var sTabTr = document.createElement("TR");
+					sTabTr.id = "notificationSettingsRow";
+					sTabTable.appendChild(sTabTr);
+					var sTabTd = document.createElement("TD");
+					sTabTd.innerHTML = tran.t("notificationAlias");
+					sTabTd.title = tran.t("notificationAliasTitle");
+					sTabTr.appendChild(sTabTd);
+					var sTabOptionsTd = document.createElement("TD");
+					sTabTr.appendChild(sTabOptionsTd);
+					var sTabInput = document.createElement("INPUT");
+					sTabInput.id = "notificationAliasInput";
+					sTabInput.addEventListener("change", function (e) {
+						bpOverlay.alias = sTabInput.value.toLowerCase().split(";");
+					});
+					sTabInput.title = tran.t("notificationAliasInputTitle");
+					sTabOptionsTd.appendChild(sTabInput);
+				})();
+				
 				// Wrap game functions, make the autoscroll/focus buttons.
 				wrapGameFunctions();
 			}
@@ -3099,6 +3197,8 @@ var attachToSettings = function () {
 		  document.getElementById("adventureSetting") &&
 		  document.getElementById("themeSelect") &&
 		  document.getElementById("customThemeInput") &&
+		  document.getElementById("notificationsSelect") &&
+		  document.getElementById("notificationAliasInput") &&
 		  document.getElementById("particleSelect") &&
 		  document.getElementById("chatDownButton") &&
 		  document.getElementById("autoFocusButton") &&
@@ -3112,6 +3212,8 @@ var attachToSettings = function () {
 		var as = document.getElementById("adventureSetting");
 		var ts = document.getElementById("themeSelect");
 		var cti = document.getElementById("customThemeInput");
+		var ns = document.getElementById("notificationsSelect");
+		var nai = document.getElementById("notificationAliasInput");
 		var ps = document.getElementById("particleSelect");
 		var cdb = document.getElementById("chatDownButton");
 		var afb = document.getElementById("autoFocusButton");
@@ -3135,6 +3237,8 @@ var attachToSettings = function () {
 		loadAndChangeSelect(cs, "containerState", "compact");
 		loadAndChangeSelect(tes, "twitchEmoteState", "on");
 		loadAndChangeSelect(as, "adventureState", "off");
+		loadAndChangeSelect(ns, "notificationsState", "on");
+		loadAndChangeSelect(nai, "notificationAlias", "");  // Yay duck typing
 		loadAndChangeSelect(ps, "particleState", "high");
 		loadAndChangeButton(cdb, "chatDownState", "true");  // String booleans because of the way data attributes work in HTML :(
 		                                                    // Trust me, I don't like being stringly typed either
@@ -3156,6 +3260,18 @@ var attachToSettings = function () {
 		as.addEventListener("change", function () {
 			setTimeout(function () {
 				GM_setValue("adventureState", as.value);
+			}, 100);
+		});
+		
+		ns.addEventListener("change", function () {
+			setTimeout(function () {
+				GM_setValue("notificationsState", ns.value);
+			}, 100);
+		});
+		
+		nai.addEventListener("change", function () {
+			setTimeout(function () {
+				GM_setValue("notificationAlias", nai.value);
 			}, 100);
 		});
 		
