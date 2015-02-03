@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         BombParty Overlay
-// @version      1.4.2
+// @version      1.4.3
 // @description  Overlay + Utilities for BombParty!
 // @icon         https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/dist/icon.png
 // @icon64       https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/dist/icon64.png
@@ -139,6 +139,7 @@ var source = function() {
 							off: "Off",
 						},
 						notificationsName: "Notifications",
+						notificationVolume: "Notification Volume",
 						notificationOptions: {
 							on: "On",
 							off: "Off",
@@ -149,7 +150,7 @@ var source = function() {
 						jqvText: "That word didn't contain J, Q nor V!",
 						azText: "You are on letter {l} Kappa!",
 						xzText: "That word didn't contain X nor Z!",
-						updateText: "New Update! (2015-01-31)<br />A notification sound now plays when this tab is inactive and someone says your name in chat. (You can turn it off in the settings.)",
+						updateText: "New Update! (2015-02-03)<br />A notification sound now plays when this tab is inactive and someone says your name in chat. (You can turn it off or change its volume in the settings.)",
 					},
 					fr: {
 						timeText: "Temps Écoulé : ",
@@ -212,6 +213,7 @@ var source = function() {
 							off: "Désactivé",
 						},
 						notificationsName: "Notifications",
+						notificationVolume: "Volume de Notification",
 						notificationOptions: {
 							on: "Activé",
 							off: "Désactivé",
@@ -222,7 +224,7 @@ var source = function() {
 						jqvText: "Ce mot ne contient ni J, ni V, ni Q.",
 						azText: "Au tour de la lettre {l} Kappa !",
 						xzText: "Ce mot ne contient ni X, ni Z !",
-						updateText: "Nouvelle mise à jour! (2015-01-31)<br />Un son se joue lorsque l'onglet est inactif et que quelqu'un écrit votre nom dans le chat (vous pouvez désactiver cette option dans les paramètres)",
+						updateText: "Nouvelle mise à jour! (2015-02-03)<br />Un son se joue lorsque l'onglet est inactif et que quelqu'un écrit votre nom dans le chat (vous pouvez désactiver cette option dans les paramètres)",
 					},
 				},
 				language: (document.cookie.indexOf("i18next=fr") !== -1 ? "fr" : "en"),
@@ -2859,6 +2861,30 @@ var source = function() {
 					}
 				);
 				
+				// This one's a slider!
+				(function () {
+					var sTabTable = document.getElementById("overlaySettingsTable");
+					var sTabTr = document.createElement("TR");
+					sTabTable.appendChild(sTabTr);
+					var sTabTd = document.createElement("TD");
+					sTabTd.innerHTML = tran.t("notificationVolume");
+					sTabTr.appendChild(sTabTd);
+					var sTabOptionsTd = document.createElement("TD");
+					sTabTr.appendChild(sTabOptionsTd);
+					var sTabInput = document.createElement("INPUT");
+					sTabInput.id = "notificationVolumeSlider";
+					sTabInput.type = "range";
+					sTabInput.min = 0;
+					sTabInput.max = 100;
+					sTabInput.value = 100;
+					sTabInput.addEventListener("change", function (e) {
+						bpOverlay.notificationSound.volume = sTabInput.value / 100;
+						bpOverlay.notificationSound.play();
+					});
+					sTabInput.title = tran.t("notificationAliasInputTitle");
+					sTabOptionsTd.appendChild(sTabInput);
+				})();
+				
 				// And another, because this one's an input
 				(function () {
 					var sTabTable = document.getElementById("overlaySettingsTable");
@@ -3212,6 +3238,7 @@ var attachToSettings = function () {
 		  document.getElementById("themeSelect") &&
 		  document.getElementById("customThemeInput") &&
 		  document.getElementById("notificationsSelect") &&
+		  document.getElementById("notificationVolumeSlider") &&
 		  document.getElementById("notificationAliasInput") &&
 		  document.getElementById("particleSelect") &&
 		  document.getElementById("chatDownButton") &&
@@ -3228,6 +3255,7 @@ var attachToSettings = function () {
 		var cti = document.getElementById("customThemeInput");
 		var ns = document.getElementById("notificationsSelect");
 		var nai = document.getElementById("notificationAliasInput");
+		var nvs = document.getElementById("notificationVolumeSlider");
 		var ps = document.getElementById("particleSelect");
 		var cdb = document.getElementById("chatDownButton");
 		var afb = document.getElementById("autoFocusButton");
@@ -3259,6 +3287,15 @@ var attachToSettings = function () {
 		loadAndChangeButton(afb, "autoFocusState", "true");
 		loadAndChangeButton(db, "dragState", "false");
 		
+		// Have to handle this one slightly differently
+		if (GM_getValue("notificationVolume", 100) !== nvs.value) {
+			nvs.value = GM_getValue("notificationVolume", 100);
+			var s = document.createElement("script");
+			s.textContent = "bpOverlay.notificationSound.volume=" + (nvs.value / 100);
+			document.body.appendChild(s);
+			document.body.removeChild(s);
+		};
+		
 		cs.addEventListener("change", function () {
 			setTimeout(function () {
 				GM_setValue("containerState", cs.value);
@@ -3286,6 +3323,12 @@ var attachToSettings = function () {
 		nai.addEventListener("change", function () {
 			setTimeout(function () {
 				GM_setValue("notificationAlias", nai.value);
+			}, 100);
+		});
+		
+		nvs.addEventListener("change", function () {
+			setTimeout(function () {
+				GM_setValue("notificationVolume", nvs.value);
 			}, 100);
 		});
 		
