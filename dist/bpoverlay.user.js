@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         BombParty Overlay
-// @version      1.4.3
+// @version      1.4.4
 // @description  Overlay + Utilities for BombParty!
 // @icon         https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/dist/icon.png
 // @icon64       https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/dist/icon64.png
@@ -90,6 +90,8 @@ var source = function() {
 						deathsText: "Deaths",
 						deathsTitle: "Lives lost in this game",
 						playersTitle: "Players:",
+						alphaText: "Alpha",
+						alphaTitle: "Which letter this player is on if he was playing alpha roulette. (The number is how many times they have completed the alphabet)",
 						chatDownButtonTitle: "Automatically scroll the chat down whenever there is a new message.",
 						autoFocusButtonTitle: "Automatically focus the chat box after your turn.",
 						dragButtonTitle: "Have the scoreboard be in a draggable container instead.",
@@ -146,11 +148,16 @@ var source = function() {
 						},
 						notificationAlias: "Aliases",
 						notificationAliasTitle: "Custom names that also trigger a notification.",
-						notificationAliasInputTitle: "Write your names one after another separated by semicolons here. e.g. MrInanimated;Inanimated;Animé;Inny",
+						notificationAliasInputTitle: "Write your names one after another separated by semicolons here. e.g. MrInanimated;Inanimated;Animé;Inan",
+						alphaRouletteName: "Alpha Roulette Display",
+						alphaRouletteOptions: {
+							on: "On",
+							off: "Off",
+						},
 						jqvText: "That word didn't contain J, Q nor V!",
 						azText: "You are on letter {l} Kappa!",
 						xzText: "That word didn't contain X nor Z!",
-						updateText: "New Update! (2015-02-03)<br />A notification sound now plays when this tab is inactive and someone says your name in chat. (You can turn it off or change its volume in the settings.)",
+						updateText: "New Update! (2015-02-04)<br />If you are playing alpha roulette mode, you can see which letter you are on by enabling it from the settings.",
 					},
 					fr: {
 						timeText: "Temps Écoulé : ",
@@ -162,13 +169,15 @@ var source = function() {
 						uFlipsTitle: "Vies récupérées inutiles : vies récupérées tandis qu'on en possède trois, ce qui les rend \"inutiles\"",
 						deathsText: "Morts",
 						deathsTitle: "Vies perdues dans cette partie",
-						playersTitle: "Joueurs",
+						alphaText: "Alpha",
+						alphaTitle: "La lettre à laquelle ce joueur serait si il jouait en mode alphabet. (Le chiffre entre parenthèses est le nombre de fois où il a complété l'alphabet)",
+						playersTitle: "Joueurs :",
 						chatDownButtonTitle: "Forcer le tchat à défiler vers le bas quand il y a un nouveau message.",
 						autoFocusButtonTitle: "Positionner automatiquement le curseur sur le tchat après son tour",
 						dragButtonTitle: "Détacher le tableau des scores.",
 						overlaySettingsButtonTitle: "Paramètres de l'Overlay",
 						overlaySettingsText: "Paramètres",
-						playerListText: "Joueurs connectés:",
+						playerListText: "Joueurs connectés",
 						creditsText: "Crédits",
 						credits1: "Code Monkey",
 						credits2: "Code Master",
@@ -220,11 +229,16 @@ var source = function() {
 						},
 						notificationAlias: "Pseudonymes",
 						notificationAliasTitle: "Noms personnalisés qui déclenchent également une notification.",
-						notificationAliasInputTitle: "Ecrivez vos noms l'un après l'autre, séparés par un point virgule. Par ex. MrInanimated;Inanimated;Animé;Inny",
+						notificationAliasInputTitle: "Ecrivez vos noms l'un après l'autre, séparés par un point virgule. Par ex. MrInanimated;Inanimated;Animé;Inan",
+						alphaRouletteName: "Affichage Mode Alphabet",
+						  alphaRouletteOptions: {
+						   on: "Activé",
+						   off: "Désactivé",
+						  },
 						jqvText: "Ce mot ne contient ni J, ni V, ni Q.",
 						azText: "Au tour de la lettre {l} Kappa !",
 						xzText: "Ce mot ne contient ni X, ni Z !",
-						updateText: "Nouvelle mise à jour! (2015-02-03)<br />Un son se joue lorsque l'onglet est inactif et que quelqu'un écrit votre nom dans le chat (vous pouvez désactiver cette option dans les paramètres)",
+						updateText: "Nouvelle mise à jour ! (2015-02-04)<br />Si vous jouez en mode alphabet, vous pouvez maintenant voir la lettre à laquelle vous êtes en activant l'option dans les paramètres.",
 					},
 				},
 				language: (document.cookie.indexOf("i18next=fr") !== -1 ? "fr" : "en"),
@@ -265,6 +279,7 @@ var source = function() {
 				lostLives: {}, // Stores lost lives by actor index
 				flips: {}, // Stores flips by actor index
 				uFlips: {}, // Stores u-flips by actor index
+				alpha: {}, // Stores progress across the alphabet
 				wordCount: 0, // Stores word count for current round
 				startTime: 0, // Stores (in milliseconds since the epoch) the starting time of the round
 				timeText: "", // Stores the text used to display the time on the overlay
@@ -1386,6 +1401,7 @@ var source = function() {
 				bpOverlay.lostLives = {};
 				bpOverlay.flips = {};
 				bpOverlay.uFlips = {};
+				bpOverlay.alpha = {};
 
 				actors = channel.data.actors;
 
@@ -1396,6 +1412,7 @@ var source = function() {
 					bpOverlay.flips[i] = 0;
 					bpOverlay.uFlips[i] = 0;
 					bpOverlay.lostLives[i] = 0;
+					bpOverlay.alpha[i] = {progress: 0, completed: 0};
 				}
 
 				// More resetting...
@@ -1448,6 +1465,8 @@ var source = function() {
 
 				// Make the actual scoreboard table
 				var infoTable = document.createElement("table");
+				infoTable.style.tableLayout = "fixed";
+				infoTable.style.width = "100%";
 				infoTableDiv.appendChild(infoTable);
 
 				// First row is a button and column headers.
@@ -1552,13 +1571,29 @@ var source = function() {
 				lostLivesColumnHeader.title = tran.t("deathsTitle");
 				firstRow.appendChild(lostLivesColumnHeader);
 				infoTable.appendChild(firstRow);
-
+				
+				// add the alphabet thing
+				var alphaColumnHeader = document.createElement("td");
+				alphaColumnHeader.textContent = tran.t("alphaText");
+				alphaColumnHeader.className = "alphaColumn";
+				alphaColumnHeader.style.color = "rgb(200,200,200)";
+				alphaColumnHeader.align = "center";
+				alphaColumnHeader.style.padding = "2px";
+				alphaColumnHeader.style.fontSize = "11px";
+				alphaColumnHeader.style.width = "40px";
+				alphaColumnHeader.title = tran.t("alphaTitle");
+				firstRow.appendChild(alphaColumnHeader);
+				
 				// Loop through the players, making a new row for each one
 				for (i = 0; i < actors.length; i++) {
 					var playerRow = document.createElement("tr");
 					playerRow.id = i + " row"; // Used to reference this row later on
 					playerRow.className = "playerRow";
 
+					if (actors[i].authId === app.user.authId) {
+						playerRow.style.background = "rgba(255,0,0,0.1)";
+					}
+					
 					// If the player this row represents is dead, grey it out
 					if (actors[i].state == "dead") {
 						playerRow.style.color = "#666";
@@ -1571,15 +1606,13 @@ var source = function() {
 
 					// Make the cell containing the name
 					var nameData = document.createElement("td");
-					var name = bpOverlay.playerNames[i]
-
-					// Shorten player display names if they're too long
-					if (name.length > 18) {
-						name = name.slice(0, 15) + "...";
-					}
+					var name = bpOverlay.playerNames[i];
 
 					nameData.textContent = name;
 					nameData.align = "center";
+					nameData.style.whiteSpace = "nowrap";
+					nameData.style.overflow = "hidden";
+					nameData.style.textOverflow = "ellipsis";
 					playerRow.appendChild(nameData)
 
 					// Make the cell containing the number of flips
@@ -1603,6 +1636,14 @@ var source = function() {
 					lostLivesData.align = "center";
 					playerRow.appendChild(lostLivesData);
 
+					// Make the alpha thing
+					var alphaData = document.createElement("td");
+					alphaData.className = "alphaColumn";
+					alphaData.id = i + " alpha"; // used to reference this cell later
+					alphaData.innerHTML = "A (0)";
+					alphaData.align = "center";
+					playerRow.appendChild(alphaData);
+					
 					// Append the row to the table
 					infoTable.appendChild(playerRow);
 				}
@@ -2174,6 +2215,19 @@ var source = function() {
 						}
 						var experience = prevExp - lockedLetters.length;
 
+						// Update the alpha thing
+						if (lastWord[0].toLowerCase() === bpOverlay.alphabet[bpOverlay.alpha[playerNum].progress]) {
+							bpOverlay.alpha[playerNum].progress++;
+							if (bpOverlay.alpha[playerNum].progress >= bpOverlay.alphabet.length) {
+								bpOverlay.alpha[playerNum].progress = 0;
+								bpOverlay.alpha[playerNum].completed++;
+							}
+							
+								if (bpOverlay.boxHasBeenCreated || bpOverlay.dragBoxHasBeenCreated) {
+									document.getElementById(playerNum + " alpha").textContent = bpOverlay.alphabet[bpOverlay.alpha[playerNum].progress].toUpperCase() + " (" + bpOverlay.alpha[playerNum].completed + ")";
+								}
+						}
+						
 						// If the lockedLetters is empty after removing all those, letters, the player has flipped
 						var flipped = (lockedLetters.length === 0);
 
@@ -2913,8 +2967,36 @@ var source = function() {
 					sTabOptionsTd.appendChild(sTabInput);
 				})();
 				
+				var alphaColumnStyle = document.createElement("STYLE");
+				alphaColumnStyle.textContent = ".alphaColumn{display:none;}";
+				document.head.appendChild(alphaColumnStyle);
+				
+				generateSettingsElement(
+					tran.t("alphaRouletteName"),
+					{
+						on: tran.t("alphaRouletteOptions.on"),
+						off: tran.t("alphaRouletteOptions.off"),
+					},
+					"alphaRouletteSelect",
+					function () {
+						var sTabSelect = document.getElementById("alphaRouletteSelect");
+						if (sTabSelect.value == "on") {
+							alphaColumnStyle.textContent = "";
+						}
+						else {
+							alphaColumnStyle.textContent = ".alphaColumn{display:none;}";
+						}
+					}
+				);
+				
+				document.getElementById("alphaRouletteSelect").value = "off";
+				
 				// Wrap game functions, make the autoscroll/focus buttons.
 				wrapGameFunctions();
+				
+				if (channel.data.state === "playing") {
+					generateActorConditions();
+				}
 			}
 			
 			firstRunProcs();
@@ -3243,7 +3325,9 @@ var attachToSettings = function () {
 		  document.getElementById("particleSelect") &&
 		  document.getElementById("chatDownButton") &&
 		  document.getElementById("autoFocusButton") &&
-		  document.getElementById("dragButton"))) {
+		  document.getElementById("dragButton") &&
+		  document.getElementById("alphaRouletteSelect"))) {
+		console.log("Cannot attach, trying again in a second");
 		setTimeout(attachToSettings, 1000);
 	}
 	else {
@@ -3260,6 +3344,7 @@ var attachToSettings = function () {
 		var cdb = document.getElementById("chatDownButton");
 		var afb = document.getElementById("autoFocusButton");
 		var db = document.getElementById("dragButton");
+		var ars = document.getElementById("alphaRouletteSelect");
 		
 		var loadAndChangeSelect = function (element, valueName, defaultValue) {
 			if (GM_getValue(valueName, defaultValue) !== element.value) {
@@ -3281,6 +3366,7 @@ var attachToSettings = function () {
 		loadAndChangeSelect(as, "adventureState", "off");
 		loadAndChangeSelect(ns, "notificationsState", "on");
 		loadAndChangeSelect(nai, "notificationAlias", "");  // Yay duck typing
+		loadAndChangeSelect(ars, "alphaRouletteState", "off");
 		loadAndChangeSelect(ps, "particleState", "high");
 		loadAndChangeButton(cdb, "chatDownState", "true");  // String booleans because of the way data attributes work in HTML :(
 		                                                    // Trust me, I don't like being stringly typed either
@@ -3337,7 +3423,13 @@ var attachToSettings = function () {
 				GM_setValue("particleState", ps.value);
 			}, 100);
 		});
-		
+	
+		ars.addEventListener("change", function () {
+			setTimeout(function () {
+				GM_setValue("alphaRouletteState", ars.value);
+			}, 100);
+		});
+	
 		cdb.addEventListener("click", function () {
 			setTimeout(function () {
 				GM_setValue("chatDownState", cdb.dataset.state);
