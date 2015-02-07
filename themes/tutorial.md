@@ -8,12 +8,12 @@ Starting Out
 ------------
 
 If you've ever looked a cookbook or some arts and crafts book, you'll know that they always start with some sort of list of ingredients or things you will need. This tutorial is no different, so without further ado, here are the ingredients you need to cook up your own custom theme for BombParty:  
-   The BombParty Overlay (why are you looking at this without having the overlay?)  
-   A text editor (Notepad will do just fine, but we all know Emacs is the best one)  
-   An image manipulation program (Try [Gimp] or [Paint.NET], but if you're really fancy, Photoshop)  
-   Basic image manipulation experience  
-   Some CSS knowledge  
-   A file hosting server (Try [Dropbox] or [Puush])  
+   * The BombParty Overlay (why are you looking at this without having the overlay?)  
+   * A text editor (Notepad will do just fine, but we all know Emacs is the best one)  
+   * An image manipulation program (Try [Gimp] or [Paint.NET], but if you're really fancy, Photoshop)  
+   * Basic image manipulation experience  
+   * Some CSS knowledge  
+   * A file hosting server (Try [Dropbox] or [Puush])  
 
 First of all, as with making anything with any sort of structure, you have to decide what things you want to do. Do you want to...  
   1. Replace the images used by the game with your own?
@@ -176,7 +176,7 @@ Writing the JSON File
 
 Oh boy, JSON. Here we go:
 
-[JSON]\(JavaScript Object Notation\) is a data format that stores data in a way that is hopefully fairly readable by humans as well as by a computer. JSON is comprised of "objects", which are denoted by `{ }` braces. Within the object, you have a name (which is a string of characters enclosed in quotes) which is tied to a value (which could be a number, an array, another object, `true`, `false`, or `null`). Each of these makes a name-value pair. If there are more than one name-value pair in an object, they need to be 
+[JSON]\(JavaScript Object Notation\) is a data format that stores data in a way that is hopefully fairly readable by humans as well as by a computer. JSON is comprised of "objects", which are denoted by `{ }` braces. Within the object, you have a name (which is a string of characters enclosed in quotes) which is tied to a value (which could be a number, an array, another object, `true`, `false`, or `null`). Each of these makes a name-value pair. If there are more than one name-value pair in an object, there needs to be a comma between each pair.
 
 In this case, JSON is used to tell the overlay exactly where the images used in the theme are, the CSS to load in manually, the rules governing the particles, the text styles etc.
 
