@@ -289,7 +289,7 @@ Aha, let's not worry about this right now.
 
 Remember you need a comma to separate adjacent name-value pairs.
 
-Add an object in your outermost JSON object like thus: `"textStyles": { }"`
+Add an object in your outermost JSON object like thus: `"textStyles": { }`
 
 As discussed earlier, there are 5 different types of text: `statusText`, `promptText`, `wordText`, `highlightedText`, and `bonusLetterText`.
 

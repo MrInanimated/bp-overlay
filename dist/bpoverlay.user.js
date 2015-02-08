@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         BombParty Overlay
-// @version      1.4.5
+// @version      1.4.6
 // @description  Overlay + Utilities for BombParty!
 // @icon         https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/dist/icon.png
 // @icon64       https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/dist/icon64.png
@@ -150,6 +150,11 @@ var source = function() {
 						notificationAlias: "Aliases",
 						notificationAliasTitle: "Custom names that also trigger a notification.",
 						notificationAliasInputTitle: "Write your names one after another separated by semicolons here. e.g. MrInanimated;Inanimated;Animé;Inan",
+						endGameNotification: "Notify when a game ends",
+						endGameNotificationOptions: {
+							on: "On",
+							off: "Off",
+						},
 						alphaRouletteName: "Alpha Roulette Display",
 						alphaRouletteOptions: {
 							on: "On",
@@ -158,7 +163,7 @@ var source = function() {
 						jqvText: "That word didn't contain J, Q nor V!",
 						azText: "You are on letter {l} Kappa!",
 						xzText: "That word didn't contain X nor Z!",
-						updateText: "New Update! (2015-02-04)<br />If you are playing alpha roulette mode, you can see which letter you are on by enabling it from the settings.",
+						updateText: "New Update! (2015-02-08)<br />You can make the overlay notify you when a game ends through the settings.",
 					},
 					fr: {
 						timeText: "Temps Écoulé : ",
@@ -231,6 +236,11 @@ var source = function() {
 						notificationAlias: "Pseudonymes",
 						notificationAliasTitle: "Noms personnalisés qui déclenchent également une notification.",
 						notificationAliasInputTitle: "Ecrivez vos noms l'un après l'autre, séparés par un point virgule. Par ex. MrInanimated;Inanimated;Animé;Inan",
+						endGameNotification: "Avertit quand une partie se termine",
+						endGameNotificationOptions: {
+							on: "Activé",
+							off: "Désactivé",
+						},
 						alphaRouletteName: "Affichage Mode Alphabet",
 						  alphaRouletteOptions: {
 						   on: "Activé",
@@ -239,7 +249,7 @@ var source = function() {
 						jqvText: "Ce mot ne contient ni J, ni V, ni Q.",
 						azText: "Au tour de la lettre {l} Kappa !",
 						xzText: "Ce mot ne contient ni X, ni Z !",
-						updateText: "Nouvelle mise à jour ! (2015-02-04)<br />Si vous jouez en mode alphabet, vous pouvez maintenant voir la lettre à laquelle vous êtes en activant l'option dans les paramètres.",
+						updateText: "Nouvelle mise à jour ! (2015-02-08)<br />Vous pouvez maintenant choisir d'obtenir une notification quand une partie se termine.",
 					},
 				},
 				language: (document.cookie.indexOf("i18next=fr") !== -1 ? "fr" : "en"),
@@ -324,6 +334,8 @@ var source = function() {
 				alias: [],
 				notificationSound: new Audio("http://bombparty.sparklinlabs.com/sounds/myTurn.wav"),
 				notifications: true,
+				
+				endGameNotification: false,
 			};
 			
 			// Store all the game images so they can be changed
@@ -2391,6 +2403,11 @@ var source = function() {
 							}
 						}
 
+						// Play the notification sound if specified
+						if (bpOverlay.endGameNotification && document.hidden) {
+							bpOverlay.notificationSound.play();
+						}
+						
 						
 						// Update the time timer as it might be 1 second behind
 						updateTime();
@@ -2968,6 +2985,26 @@ var source = function() {
 					sTabOptionsTd.appendChild(sTabInput);
 				})();
 				
+				generateSettingsElement(
+					tran.t("endGameNotification"),
+					{
+						on: tran.t("endGameNotificationOptions.on"),
+						off: tran.t("endGameNotificationOptions.off"),
+					},
+					"endGameNotificationSelect",
+					function () {
+						var sTabSelect = document.getElementById("endGameNotificationSelect");
+						if (sTabSelect.value == "on") {
+							bpOverlay.endGameNotification = true;
+						}
+						else {
+							bpOverlay.endGameNotification = false;
+						}
+					}
+				);
+				
+				document.getElementById("endGameNotificationSelect").value = "off";
+				
 				var alphaColumnStyle = document.createElement("STYLE");
 				alphaColumnStyle.textContent = ".alphaColumn{display:none;}";
 				document.head.appendChild(alphaColumnStyle);
@@ -3323,6 +3360,7 @@ var attachToSettings = function () {
 		  document.getElementById("notificationsSelect") &&
 		  document.getElementById("notificationVolumeSlider") &&
 		  document.getElementById("notificationAliasInput") &&
+		  document.getElementById("endGameNotificationSelect") &&
 		  document.getElementById("particleSelect") &&
 		  document.getElementById("chatDownButton") &&
 		  document.getElementById("autoFocusButton") &&
@@ -3341,6 +3379,7 @@ var attachToSettings = function () {
 		var ns = document.getElementById("notificationsSelect");
 		var nai = document.getElementById("notificationAliasInput");
 		var nvs = document.getElementById("notificationVolumeSlider");
+		var egns = document.getElementById("endGameNotificationSelect");
 		var ps = document.getElementById("particleSelect");
 		var cdb = document.getElementById("chatDownButton");
 		var afb = document.getElementById("autoFocusButton");
@@ -3367,6 +3406,7 @@ var attachToSettings = function () {
 		loadAndChangeSelect(as, "adventureState", "off");
 		loadAndChangeSelect(ns, "notificationsState", "on");
 		loadAndChangeSelect(nai, "notificationAlias", "");  // Yay duck typing
+		loadAndChangeSelect(egns, "endGameNotificationSetting", "off");
 		loadAndChangeSelect(ars, "alphaRouletteState", "off");
 		loadAndChangeSelect(ps, "particleState", "high");
 		loadAndChangeButton(cdb, "chatDownState", "true");  // String booleans because of the way data attributes work in HTML :(
@@ -3416,6 +3456,12 @@ var attachToSettings = function () {
 		nvs.addEventListener("change", function () {
 			setTimeout(function () {
 				GM_setValue("notificationVolume", nvs.value);
+			}, 100);
+		});
+		
+		egns.addEventListener("change", function () {
+			setTimeout(function () {
+				GM_setValue("endGameNotificationSetting", egns.value);
 			}, 100);
 		});
 		
