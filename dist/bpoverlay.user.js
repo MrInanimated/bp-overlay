@@ -336,6 +336,8 @@ var source = function() {
 				notifications: true,
 				
 				endGameNotification: false,
+				
+				ignoring: {},
 			};
 			
 			// Store all the game images so they can be changed
@@ -1696,6 +1698,66 @@ var source = function() {
 
 			}
 
+			// Make a context menu.
+			// Unfinished at the current time
+			var createContextMenu = function () {
+			
+				var contextMenu = document.createElement("DIV");
+				contextMenu.id = "bpContextMenu";
+				contextMenu.style.background = "#ffffff";
+				contextMenu.style.border = "1px solid #0000ff";
+				contextMenu.style.display = "none";
+				contextMenu.style.position = "absolute";
+				contextMenu.style.minWidth = "150px";
+				contextMenu.innerHTML = "\
+					<ul id=\"contextList\" style=\"list-style-type: none;\">\
+						<li><button id=\"contextBan\" class=\"contextMenuButton\">Ban </button></li>\
+						<li><button id=\"contextMod\" class=\"contextMenuButton\">Mod </button></li>\
+					</ul>\
+				";
+				
+				document.addEventListener("click", function (e) {
+					console.log(e.button);
+					if (e.button === 0 || e.target.className !== "User") {
+						contextMenu.style.display = "none";
+					}
+				});
+				
+				document.addEventListener("contextmenu", function (e) {
+					if (e.target.className === "User" && e.target.dataset.authId && channel.data.usersByAuthId[e.target.dataset.authId]) {
+						var contextMenuBan = document.getElementById("contextBan");
+						var contextMenuMod = document.getElementById("contextMod");
+						contextMenu.style.display = "";
+						
+						contextMenuBan.textContent = "Ban " + name;
+						contextMenuMod.textContent = "Mod " + name;
+						
+						var x = e.clientX;
+						var y = e.clientY;
+						var width = window.innerWidth - 3;
+						var height = window.innerHeight - 3;
+						if (x + contextMenu.clientWidth > width) {
+							x = width - contextMenu.clientWidth;
+						}
+						if (y + contextMenu.clientHeight > height) {
+							y = height - contextMenu.clientHeight;
+						}
+						
+						contextMenu.style.left = x + "px";
+						contextMenu.style.top = y + "px";
+						
+						var authId = e.target.dataset.authId;
+						var name = channel.data.usersByAuthId[authId].displayName;
+
+						contextMenuBan.dataset.authId = authId;
+						contextMenuMod.dataset.authId = authId;
+						e.preventDefault();
+					}
+				});
+				
+				document.body.appendChild(contextMenu);
+			};
+			
 			//Usage: 	generateSettingsElement(itemText, options, selectId, settingsFunction)
 			//string	'itemText' is the text to the right of the drop down options pane
 			//object	'options' is an object {value: Text, value2: Text2, ... , valueN: TextN}
@@ -1902,46 +1964,48 @@ var source = function() {
 				// I guess I'm wrapping this as well
 				channel.socket.listeners("chatMessage").pop();
 				channel.socket.on("chatMessage", function(e) {
-					var notified = false;
-					var index;
-					if (e.text) {
-						var lowercaseText = e.text.toLowerCase();
-						if (bpOverlay.notifications) {
-							if ((index = lowercaseText.indexOf(app.user.displayName.toLowerCase())) !== -1) {
-								if ((index === 0 || lowercaseText[index-1].search(/\W/) !== -1) &&
-									(index + app.user.displayName.length >= lowercaseText.length || lowercaseText[index + app.user.displayName.length].search(/\W/) !== -1)) {
-									if (document.hidden) {
-										bpOverlay.notificationSound.play();
+					if (!bpOverlay.ignoring[e.userAuthId]) {
+						var notified = false;
+						var index;
+						if (e.text) {
+							var lowercaseText = e.text.toLowerCase();
+							if (bpOverlay.notifications) {
+								if ((index = lowercaseText.indexOf(app.user.displayName.toLowerCase())) !== -1) {
+									if ((index === 0 || lowercaseText[index-1].search(/\W/) !== -1) &&
+										(index + app.user.displayName.length >= lowercaseText.length || lowercaseText[index + app.user.displayName.length].search(/\W/) !== -1)) {
+										if (document.hidden) {
+											bpOverlay.notificationSound.play();
+										}
+										notified = true;
 									}
-									notified = true;
 								}
-							}
-							else {
-								var i = 0;
-								for (; i < bpOverlay.alias.length; i++) {
-									if ((index = lowercaseText.indexOf(bpOverlay.alias[i])) !== -1) {
-										if ((index === 0 || lowercaseText[index-1].search(/\W/) !== -1) &&
-											(index + bpOverlay.alias[i].length >= lowercaseText.length || lowercaseText[index + bpOverlay.alias[i].length].search(/\W/) !== -1)) {
-											if (document.hidden) {
-												bpOverlay.notificationSound.play();
+								else {
+									var i = 0;
+									for (; i < bpOverlay.alias.length; i++) {
+										if ((index = lowercaseText.indexOf(bpOverlay.alias[i])) !== -1) {
+											if ((index === 0 || lowercaseText[index-1].search(/\W/) !== -1) &&
+												(index + bpOverlay.alias[i].length >= lowercaseText.length || lowercaseText[index + bpOverlay.alias[i].length].search(/\W/) !== -1)) {
+												if (document.hidden) {
+													bpOverlay.notificationSound.play();
+												}
+												notified = true;
+												break;
 											}
-											notified = true;
-											break;
 										}
 									}
 								}
 							}
 						}
+					
+						null != e.userAuthId ? channel.appendToChat("Message Author-" + e.userAuthId.replace(/:/g, "_") + (notified ? " highlighted" : ""), JST["nuclearnode/chatMessage"]({
+							text: e.text,
+							author: JST["nuclearnode/chatUser"]({
+								user: channel.data.usersByAuthId[e.userAuthId],
+								i18n: i18n,
+								app: app
+							})
+						})) : channel.appendToChat("Info" + (notified ? " highlighted" : ""), i18n.t("nuclearnode:chat." + e.text))
 					}
-				
-					null != e.userAuthId ? channel.appendToChat("Message Author-" + e.userAuthId.replace(/:/g, "_") + (notified ? " highlighted" : ""), JST["nuclearnode/chatMessage"]({
-						text: e.text,
-						author: JST["nuclearnode/chatUser"]({
-							user: channel.data.usersByAuthId[e.userAuthId],
-							i18n: i18n,
-							app: app
-						})
-					})) : channel.appendToChat("Info" + (notified ? " highlighted" : ""), i18n.t("nuclearnode:chat." + e.text))
 				});
 			
 				// Screw your function for handling chat messages, Elisee
@@ -1988,13 +2052,19 @@ var source = function() {
 									}
 								}
 						})
-						.call(this), a.push("<span" + jade.attr("title", l.join(", "), !0, !1) + ' class="User">'), "" != e.role && a.push("<span" + jade.attr("title", n.t("nuclearnode:userRoles." + e.role), !0, !1) + jade.cls(["UserRole_" + e.role], [!0]) + "></span> "), a.push(jade.escape(null == (t = e.displayName) ? "" : t)), a.push("</span>")
+						.call(this), a.push("<span" + jade.attr("title", l.join(", "), !0, !1) + (e.authId ? jade.attr("data-auth-id", e.authId, !0, !1) : "") + ' class="User">'), "" != e.role && a.push("<span" + jade.attr("title", n.t("nuclearnode:userRoles." + e.role), !0, !1) + jade.cls(["UserRole_" + e.role], [!0]) + "></span> "), a.push(jade.escape(null == (t = e.displayName) ? "" : t)), a.push("</span>")
 						// Got rid of the Ban and Mod buttons from the line above
 					}.call(this, "user" in n ? n.user : "undefined" != typeof user ? user : void 0, "i18n" in n ? n.i18n : "undefined" != typeof i18n ? i18n : void 0, "app" in n ? n.app : "undefined" != typeof app ? app : void 0), a.join("")
 				}
 				// Those buttons are being rid of so we don't accidentally ban people when trying to chat
 				// A list of people that you can ban will be provided
 				
+				// Context menus!
+				document.body.addEventListener("contextmenu", function (e) {
+					if (e.target.className === "User" && e.target.dataset.authId) {
+						e.preventDefault();
+					}
+				});
 			
 				// Chat message wrapper
 				var gameChat = channel.appendToChat;
@@ -2478,7 +2548,7 @@ var source = function() {
 									}
 								}
 						})
-						 .call(this), a.push("<span" + jade.attr("title", l.join(", "), !0, !1) + ' class="User">'), "" != e.role && a.push("<span" + jade.attr("title", n.t("nuclearnode:userRoles." + e.role), !0, !1) + jade.cls(["UserRole_" + e.role], [!0]) + "></span> "), a.push(jade.escape(null == (t = e.displayName) ? "" : t)), -1 != ["host", "hubAdministrator", "moderator"].indexOf(r.user.role) && (a.push('<span class="Actions"><button' + jade.attr("data-auth-id", e.authId, !0, !1) + jade.attr("data-display-name", e.displayName, !0, !1) + ' class="BanUser">' + jade.escape(null == (t = n.t("nuclearnode:chat.ban")) ? "" : t) + "</button>"), ("host" == r.user.role || "hubAdministrator" == r.user.role) && a.push("<button" + jade.attr("data-auth-id", e.authId, !0, !1) + jade.attr("data-display-name", e.displayName, !0, !1) + ' class="ModUser">' + jade.escape(null == (t = n.t("nuclearnode:chat.mod")) ? "" : t) + "</button>"), a.push("</span>")), a.push("</span>")
+						 .call(this), a.push("<span" + jade.attr("title", l.join(", "), !0, !1) + ' class="User">'), "" != e.role && a.push("<span" + jade.attr("title", n.t("nuclearnode:userRoles." + e.role), !0, !1) + jade.cls(["UserRole_" + e.role], [!0]) + "></span> "), a.push(jade.escape(null == (t = e.displayName) ? "" : t)), a.push('<span class="Actions">'), ["host", "hubAdministrator", "moderator"].indexOf(r.user.role) && (a.push('<button' + jade.attr("data-auth-id", e.authId, !0, !1) + jade.attr("data-display-name", e.displayName, !0, !1) + ' class="BanUser">' + jade.escape(null == (t = n.t("nuclearnode:chat.ban")) ? "" : t) + "</button>"), ("host" == r.user.role || "hubAdministrator" == r.user.role) && a.push("<button" + jade.attr("data-auth-id", e.authId, !0, !1) + jade.attr("data-display-name", e.displayName, !0, !1) + ' class="ModUser">' + jade.escape(null == (t = n.t("nuclearnode:chat.mod")) ? "" : t) + "</button>")), a.push("<button" + jade.attr("data-auth-id", e.authId, !0, !1) + jade.attr("data-display-name", e.displayName, !0, !1) + ' class="MuteUser">' + tran.t("muteUser") + "</button>"), a.push("</span>"), a.push("</span>")
 						
 						PDIH += a.join("");
 						PDIH += "<br />";
@@ -2500,7 +2570,7 @@ var source = function() {
 				// Probably a better way of doing this
 				// Lol. TFW web-console css is hard
 				var style = document.createElement('style');
-				style.appendChild(document.createTextNode('.headerButtonDiv {  display: -webkit-box;  display: -moz-box;  display: -webkit-flex;  display: -ms-flexbox;  display: box;  display: flex;  opacity: 0.3;  -ms-filter: "progid:DXImageTransform.Microsoft.Alpha(Opacity=30)";  filter: alpha(opacity=30);} .headerButtonDiv:hover {  opacity: 1;  -ms-filter: none;  filter: none;} button.headerButton {  border: none;  background: none;  cursor: pointer;  opacity: 0.5;  -ms-filter: "progid:DXImageTransform.Microsoft.Alpha(Opacity=50)";  filter: alpha(opacity=50);  display: -webkit-box;  display: -moz-box;  display: -webkit-flex;  display: -ms-flexbox;  display: box;  display: flex;} button.headerButton:hover {  opacity: 0.8;  -ms-filter: "progid:DXImageTransform.Microsoft.Alpha(Opacity=80)";  filter: alpha(opacity=80);} button.headerButton:active {  opacity: 1;  -ms-filter: none;  filter: none;} .infoTableDiv::-webkit-scrollbar { width: 15px; height: 15px; } .infoTableDiv::-webkit-scrollbar-button { height: 0px; width: 0px; } .infoTableDiv::-webkit-scrollbar-track { background-color: rgba(0,0,0,0.05); } .infoTableDiv::-webkit-scrollbar-thumb { background-color: rgba(255,255,255,0.1); border: 3px solid transparent; -webkit-border-radius: 6px; border-radius: 6px; -webkit-background-clip: content; -moz-background-clip: content; background-clip: content-box; } .infoTableDiv::-webkit-scrollbar-thumb:hover { background-color: rgba(255,255,255,0.15); } .infoTableDiv::-webkit-scrollbar-corner { background-color: rgba(255,255,255,0.1); }#overlaySettingsTab{text-align:left;overflow-y:auto}#overlaySettingsTab h2{padding:.5em .5em 0;opacity:.5;-ms-filter:"alpha(Opacity=50)";filter:alpha(opacity=50)}#overlaySettingsTab table{width:100%;padding:.5em}#overlaySettingsTab table tr td:nth-child(1){width:40%}#overlaySettingsTab table tr td:nth-child(2){width:60%}#overlaySettingsTab table button:not(.UnbanUser),#overlaySettingsTab table input,#overlaySettingsTab table select,#overlaySettingsTab table textarea{width:100%;background:#444;border:none;padding:.25em;color:#fff;font:inherit}#overlaySettingsTab table textarea{resize:vertical;min-height:3em}#overlaySettingsTab table ul{list-style:none}#overlaySettingsTab .User .UserRole_hubAdministrator:before{content:\'[★]\';cursor:default;color:#c63}#overlaySettingsTab .User .UserRole_host:before{content:\'★\';cursor:default;color:#dc8}#overlaySettingsTab .User .UserRole_administrator:before{content:\'☆\';cursor:default;color:#dc8}#overlaySettingsTab .User .UserRole_moderator:before{content:\'●\';cursor:default;color:#346192}#overlaySettingsTab .Actions button{border:none;background:0 0;cursor:pointer;margin:0 .25em;outline:0;font-weight:400;font-size:smaller;opacity:.8;-ms-filter:"alpha(Opacity=80)";filter:alpha(opacity=80)}#overlaySettingsTab .Actions button.BanUser{color:#a00}#overlaySettingsTab .Actions button.ModUser,#overlaySettingsTab .Actions button.UnmodUser{color:#2a3}#overlaySettingsTab .Actions button:hover{opacity:1;-ms-filter:none;filter:none}#overlaySettingsTab .Actions button:active{background:rgba(255,0,0,.2)}#overlaySettingsTab input{-moz-user-select:text;-webkit-user-select:text;-ms-user-select:text}#ChatLog .highlighted{background: rgba(255, 0, 0, 0.05);}#ChatLog .highlighted:hover {background: rgba(255, 0, 0, 0.1);}'));
+				style.appendChild(document.createTextNode('.headerButtonDiv {  display: -webkit-box;  display: -moz-box;  display: -webkit-flex;  display: -ms-flexbox;  display: box;  display: flex;  opacity: 0.3;  -ms-filter: "progid:DXImageTransform.Microsoft.Alpha(Opacity=30)";  filter: alpha(opacity=30);} .headerButtonDiv:hover {  opacity: 1;  -ms-filter: none;  filter: none;} button.headerButton {  border: none;  background: none;  cursor: pointer;  opacity: 0.5;  -ms-filter: "progid:DXImageTransform.Microsoft.Alpha(Opacity=50)";  filter: alpha(opacity=50);  display: -webkit-box;  display: -moz-box;  display: -webkit-flex;  display: -ms-flexbox;  display: box;  display: flex;} button.headerButton:hover {  opacity: 0.8;  -ms-filter: "progid:DXImageTransform.Microsoft.Alpha(Opacity=80)";  filter: alpha(opacity=80);} button.headerButton:active {  opacity: 1;  -ms-filter: none;  filter: none;} .infoTableDiv::-webkit-scrollbar { width: 15px; height: 15px; } .infoTableDiv::-webkit-scrollbar-button { height: 0px; width: 0px; } .infoTableDiv::-webkit-scrollbar-track { background-color: rgba(0,0,0,0.05); } .infoTableDiv::-webkit-scrollbar-thumb { background-color: rgba(255,255,255,0.1); border: 3px solid transparent; -webkit-border-radius: 6px; border-radius: 6px; -webkit-background-clip: content; -moz-background-clip: content; background-clip: content-box; } .infoTableDiv::-webkit-scrollbar-thumb:hover { background-color: rgba(255,255,255,0.15); } .infoTableDiv::-webkit-scrollbar-corner { background-color: rgba(255,255,255,0.1); }#overlaySettingsTab{text-align:left;overflow-y:auto}#overlaySettingsTab h2{padding:.5em .5em 0;opacity:.5;-ms-filter:"alpha(Opacity=50)";filter:alpha(opacity=50)}#overlaySettingsTab table{width:100%;padding:.5em}#overlaySettingsTab table tr td:nth-child(1){width:40%}#overlaySettingsTab table tr td:nth-child(2){width:60%}#overlaySettingsTab table button:not(.UnbanUser),#overlaySettingsTab table input,#overlaySettingsTab table select,#overlaySettingsTab table textarea{width:100%;background:#444;border:none;padding:.25em;color:#fff;font:inherit}#overlaySettingsTab table textarea{resize:vertical;min-height:3em}#overlaySettingsTab table ul{list-style:none}#overlaySettingsTab .User .UserRole_hubAdministrator:before{content:\'[★]\';cursor:default;color:#c63}#overlaySettingsTab .User .UserRole_host:before{content:\'★\';cursor:default;color:#dc8}#overlaySettingsTab .User .UserRole_administrator:before{content:\'☆\';cursor:default;color:#dc8}#overlaySettingsTab .User .UserRole_moderator:before{content:\'●\';cursor:default;color:#346192}#overlaySettingsTab .Actions button{border:none;background:0 0;cursor:pointer;margin:0 .25em;outline:0;font-weight:400;font-size:smaller;opacity:.8;-ms-filter:"alpha(Opacity=80)";filter:alpha(opacity=80)}#overlaySettingsTab .Actions button.BanUser{color:#a00}#overlaySettingsTab .Actions button.ModUser,#overlaySettingsTab .Actions button.UnmodUser{color:#2a3}#overlaySettingsTab .Actions button:hover{opacity:1;-ms-filter:none;filter:none}#overlaySettingsTab .Actions button:active{background:rgba(255,0,0,.2)}#overlaySettingsTab input{-moz-user-select:text;-webkit-user-select:text;-ms-user-select:text}#ChatLog .highlighted{background: rgba(255, 0, 0, 0.05);}#ChatLog .highlighted:hover {background: rgba(255, 0, 0, 0.1);}#bpContextMenu {background:#ffffff;position:absolute;min-width:150px;border:1px solid #0000ff}#contextList {list-style-type:none;padding:-2px 0px 0px 0px;margin:0;}.contextMenuButton {text-align:left;width:100%;background:#ffffff;border:none;whitespace:no-wrap;}.contextMenuButton:hover {background:#aeaeff;}'));
 				document.getElementsByTagName('head')[0].appendChild(style);
 				
 				// Load the hideDead on/off images
@@ -2635,6 +2705,10 @@ var source = function() {
 					}
 				);
 				
+				// Make the context menu.
+				// Temporarily disabled.
+				//createContextMenu();
+				
 				//Add the fourth button on the settingsTab that hopefully doesn't interfere with the others.
 				var sideButtons = document.getElementById("SidebarTabButtons");
 				var sideTabs    = document.getElementById("SidebarTabs");
@@ -2679,8 +2753,6 @@ var source = function() {
 				var settingsTab = document.getElementById("overlaySettingsTab");
 				settingsTab.appendChild(bpOverlayH2);
 				
-				
-				
 				// Moved over the settings tab things to here
 				var sTabTable = document.createElement("TABLE");
 				sTabTable.id = "overlaySettingsTable";
@@ -2695,6 +2767,9 @@ var source = function() {
 				playerListDiv.id = "PlayerList";
 				playerListDiv.style.marginLeft = "8px";
 				settingsTab.appendChild(playerListDiv);
+				
+				var ignoringListDiv = document.createElement("DIV");
+				// TODO
 				
 				// A little attribution table
 				var creditsH2 = document.createElement("H2");
