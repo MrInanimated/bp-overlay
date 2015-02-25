@@ -37,10 +37,8 @@ function addJQuery(callback) {
   document.body.appendChild(script);
 }
 
-// the guts of this userscript
+// an empty callback loader (also for main page)
 function main() {
-  // Note, jQ replaces $ to avoid conflicts.
-  alert("There are " + jQ('a').length + " links on this page.");
 }
 
 // load jQuery and execute the main function
