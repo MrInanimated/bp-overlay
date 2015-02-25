@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         BombParty Overlay
-// @version      1.4.6
+// @version      1.4.7
 // @description  Overlay + Utilities for BombParty!
 // @icon         https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/dist/icon.png
 // @icon64       https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/dist/icon64.png
@@ -23,6 +23,26 @@
 // @grant        GM_setValue
 // @grant        GM_xmlhttpRequest
 // ==/UserScript==
+
+//@require is not allowed under chrome (according to stackoverflow) and other suggested solutions have yet to work for me
+// a function that loads jQuery and calls a callback function when jQuery has finished loading
+function addJQuery(callback) {
+  var script = document.createElement("script");
+  script.setAttribute("src", "//ajax.googleapis.com/ajax/libs/jquery/1/jquery.min.js");
+  script.addEventListener('load', function() {
+    var script = document.createElement("script");
+    script.textContent = "window.jQ=jQuery.noConflict(true);(" + callback.toString() + ")();";
+    document.body.appendChild(script);
+  }, false);
+  document.body.appendChild(script);
+}
+
+// an empty callback loader (also for main page)
+function main() {
+}
+
+// load jQuery and execute the main function
+addJQuery(main);
 
 // Grab the twitch emotes
 var tg = GM_getResourceText("twitch_global");
@@ -163,7 +183,7 @@ var source = function() {
 						jqvText: "That word didn't contain J, Q nor V!",
 						azText: "You are on letter {l} Kappa!",
 						xzText: "That word didn't contain X nor Z!",
-						updateText: "New Update! (2015-02-08)<br />You can make the overlay notify you when a game ends through the settings.",
+						updateText: "New Update! (2015-02-08)<br />Settings are now in a collapsible container. Just click on 'Overlay Settings', 'Current Players' or 'Credits' to reveal the appropriate content.",
 					},
 					fr: {
 						timeText: "Temps Écoulé : ",
@@ -249,7 +269,7 @@ var source = function() {
 						jqvText: "Ce mot ne contient ni J, ni V, ni Q.",
 						azText: "Au tour de la lettre {l} Kappa !",
 						xzText: "Ce mot ne contient ni X, ni Z !",
-						updateText: "Nouvelle mise à jour ! (2015-02-08)<br />Vous pouvez maintenant choisir d'obtenir une notification quand une partie se termine.",
+						updateText: "Nouvelle mise à jour ! (2015-02-08)<br />(Les paramètres sont maintenant dans un menu déroulant. Cliquer sur 'Paramètres', 'Joueurs' ou 'Crédits' pour révéler le contenu correspondant.",
 					},
 				},
 				language: (document.cookie.indexOf("i18next=fr") !== -1 ? "fr" : "en"),
@@ -2749,22 +2769,61 @@ var source = function() {
 				//We only want this once (I believe) so this is outside of a function
 				//Generate the overlay section and append it to the SettingsTab
 				var bpOverlayH2 = document.createElement("H2");
+				
+				//We add an id for the jq to recognize the object
+				bpOverlayH2.id="bpOverlayH2";
+				bpOverlayH2.onclick=function() {
+					jQ('#overlaySettingsTableWrapper').slideToggle('slow');				
+				};
+
+
+				//Since we can't require any styles nor anything (cross browser), we're just going to quickly write
+				//a mouseover and mouseout hacks so that this is nice and responsive
+				bpOverlayH2.onmouseover=function() {
+					jQ('#bpOverlayH2').css("text-shadow", "0 0 24px white");
+				};
+
+				bpOverlayH2.onmouseout=function() {
+					jQ('#bpOverlayH2').css("text-shadow", "0 0 0px black");
+				};
+
 				bpOverlayH2.textContent = tran.t("overlaySettingsText");
 				var settingsTab = document.getElementById("overlaySettingsTab");
 				settingsTab.appendChild(bpOverlayH2);
 				
 				// Moved over the settings tab things to here
+				// We wrap everything in a div because jquery doesn't handle table smoothly
+				var sTabTableWrapper = document.createElement("DIV");
+				// Wrapper starts hidden
+				sTabTableWrapper.style.display="none";
+				sTabTableWrapper.id="overlaySettingsTableWrapper";
 				var sTabTable = document.createElement("TABLE");
 				sTabTable.id = "overlaySettingsTable";
-				settingsTab.appendChild(sTabTable);
+				sTabTableWrapper.appendChild(sTabTable);
+				settingsTab.appendChild(sTabTableWrapper);
 
 				// Might as well have the current players in here
 				var playerListH2 = document.createElement("H2");
+				playerListH2.id ="PlayerListH2";
 				playerListH2.textContent = tran.t("playerListText");
+				playerListH2.onclick = function() {
+					jQ('#PlayerList').slideToggle('slow');				
+				};
+
+
+				playerListH2.onmouseover=function() {
+					jQ('#PlayerListH2').css("text-shadow", "0 0 24px white");
+				};
+
+				playerListH2.onmouseout=function() {
+					jQ('#PlayerListH2').css("text-shadow", "0 0 0px black");
+				};
+
 				settingsTab.appendChild(playerListH2);
 				
 				var playerListDiv = document.createElement("DIV");
 				playerListDiv.id = "PlayerList";
+				playerListDiv.style.display="none";
 				playerListDiv.style.marginLeft = "8px";
 				settingsTab.appendChild(playerListDiv);
 				
@@ -2773,10 +2832,26 @@ var source = function() {
 				
 				// A little attribution table
 				var creditsH2 = document.createElement("H2");
+				creditsH2.id="creditsH2";
+				creditsH2.onclick = function() {
+					jQ('#creditsTableWrapper').slideToggle('slow');
+					jQ('#creditsTextDiv').slideToggle('slow');				
+				};
+
+				creditsH2.onmouseover=function() {
+					jQ('#creditsH2').css("text-shadow", "0 0 24px white");
+				};
+
+				creditsH2.onmouseout=function() {
+					jQ('#creditsH2').css("text-shadow", "0 0 0px black");
+				};
 				creditsH2.textContent = tran.t("creditsText");
 				settingsTab.appendChild(creditsH2);
 				
 				var creditsTable = document.createElement("TABLE");
+				var creditsTableWrapper = document.createElement("DIV");
+				creditsTableWrapper.style.display="none";
+				creditsTableWrapper.id = "creditsTableWrapper";
 				creditsTable.id = "creditsTable";
 				creditsTable.innerHTML = "\
 				<tr><td>" + tran.t("credits1") + "</td><td>MrInanimated</td></tr>\
@@ -2784,12 +2859,16 @@ var source = function() {
 				<tr><td>" + tran.t("credits3") + "</td><td>Sanc</td></tr>\
 				<tr><td>" + tran.t("creditsAutolinker") + "</td><td><a href=\"https://github.com/gregjacobs/Autolinker.js\">Autolinker.js</a></td></tr>\
 				<tr><td>" + tran.t("creditsTwitchEmotes") + "</td><td><a href=\"http://twitchemotes.com/\">twitchemotes.com</a></td></tr>";
-				settingsTab.appendChild(creditsTable);
+				creditsTableWrapper.appendChild(creditsTable);				
+				settingsTab.appendChild(creditsTableWrapper);
 				
 				var creditsText = document.createElement("DIV");
 				creditsText.textContent = tran.t("creditsTextText");
 				creditsText.style.marginLeft = "8px";
+				creditsText.id="creditsTextDiv";
+				creditsText.style.display="none";
 				settingsTab.appendChild(creditsText);
+
 				
 				generateSettingsElement(tran.t("containerSizeName"),
 					{
