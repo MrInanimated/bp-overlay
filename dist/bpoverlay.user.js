@@ -269,7 +269,7 @@ var source = function() {
 						jqvText: "Ce mot ne contient ni J, ni V, ni Q.",
 						azText: "Au tour de la lettre {l} Kappa !",
 						xzText: "Ce mot ne contient ni X, ni Z !",
-						updateText: "Nouvelle mise à jour ! (2015-02-08)<br />(Les paramètres sont maintenant dans un menu déroulant. Cliquer sur 'Paramètres', 'Joueurs' ou 'Crédits' pour révéler le contenu correspondant.",
+						updateText: "Nouvelle mise à jour ! (2015-02-08)<br />Les paramètres sont maintenant dans un menu déroulant. Cliquer sur 'Paramètres', 'Joueurs' ou 'Crédits' pour révéler le contenu correspondant.",
 					},
 				},
 				language: (document.cookie.indexOf("i18next=fr") !== -1 ? "fr" : "en"),
