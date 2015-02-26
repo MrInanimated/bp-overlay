@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         BombParty Overlay
-// @version      1.4.7
+// @version      1.4.8 
 // @description  Overlay + Utilities for BombParty!
 // @icon         https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/dist/icon.png
 // @icon64       https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/dist/icon64.png
@@ -183,7 +183,19 @@ var source = function() {
 						jqvText: "That word didn't contain J, Q nor V!",
 						azText: "You are on letter {l} Kappa!",
 						xzText: "That word didn't contain X nor Z!",
-						updateText: "New Update! (2015-02-08)<br />Settings are now in a collapsible container. Just click on 'Overlay Settings', 'Current Players' or 'Credits' to reveal the appropriate content.",
+						updateText: "New Update! (2015-02-26)<br />Experimental text-to-speech. See settings.",
+						speechName: "Speech on Chrome<sup>BETA</sup>",
+						speechOptions: {
+							on: "On",
+							off: "Off",
+						},
+						voiceSelect: "Voice",
+						voiceOptions: {
+							us: "US",
+							ukMale: "GB Male",
+							ukFem: "GB Female",
+							fran: "FR",
+						},
 					},
 					fr: {
 						timeText: "Temps Écoulé : ",
@@ -269,7 +281,19 @@ var source = function() {
 						jqvText: "Ce mot ne contient ni J, ni V, ni Q.",
 						azText: "Au tour de la lettre {l} Kappa !",
 						xzText: "Ce mot ne contient ni X, ni Z !",
-						updateText: "Nouvelle mise à jour ! (2015-02-08)<br />(Les paramètres sont maintenant dans un menu déroulant. Cliquer sur 'Paramètres', 'Joueurs' ou 'Crédits' pour révéler le contenu correspondant.",
+						updateText: "Nouvelle mise à jour ! (2015-02-26)<br />Expérimental TTS. Voir paramètres.",
+						speechName: "Vocale sur Chrome<sup>BETA</sup>",
+						speechOptions: {
+							on: "Activé",
+							off: "Désactivé",
+						},
+						voiceSelect: "Voix",
+						voiceOptions: {
+							us: "US",
+							ukMale: "GB Homme",
+							ukFem: "GB Femme",
+							fran: "FR",
+						},
 					},
 				},
 				language: (document.cookie.indexOf("i18next=fr") !== -1 ? "fr" : "en"),
@@ -356,6 +380,8 @@ var source = function() {
 				notifications: true,
 				
 				endGameNotification: false,
+	
+				speechName: "Google UK English Male",	//Default voice
 			};
 			
 			// Store all the game images so they can be changed
@@ -2869,7 +2895,7 @@ var source = function() {
 						}
 					}
 				);
-
+				//Hard modes
 				generateSettingsElement(
 					tran.t("hardModesName"),
 					{
@@ -2929,6 +2955,7 @@ var source = function() {
 					}
 				);							
 				
+				//Theme element
 				generateSettingsElement(
 					tran.t("themeName"),
 					{
@@ -2974,6 +3001,7 @@ var source = function() {
 					sTabOptionsTd.appendChild(sTabInput);
 				})();
 				
+				//Particle settings
 				generateSettingsElement(
 					tran.t("particlesName"),
 					{
@@ -2994,6 +3022,7 @@ var source = function() {
 					}
 				);
 				
+				//Notifies
 				generateSettingsElement(
 					tran.t("notificationsName"),
 					{
@@ -3064,6 +3093,7 @@ var source = function() {
 					sTabOptionsTd.appendChild(sTabInput);
 				})();
 				
+				//Notification meow
 				generateSettingsElement(
 					tran.t("endGameNotification"),
 					{
@@ -3088,6 +3118,7 @@ var source = function() {
 				alphaColumnStyle.textContent = ".alphaColumn{display:none;}";
 				document.head.appendChild(alphaColumnStyle);
 				
+				//Alpha display
 				generateSettingsElement(
 					tran.t("alphaRouletteName"),
 					{
@@ -3106,6 +3137,92 @@ var source = function() {
 					}
 				);
 				
+				//oh boy. Here we go with the speech element
+				generateSettingsElement(
+					tran.t("speechName"),
+					{
+						off: tran.t("speechOptions.off"),
+						on: tran.t("speechOptions.on"),
+					},
+					"speechSelect",
+					function() {
+						var sTabSelect = document.getElementById("speechSelect");
+						if(sTabSelect.value == "on") {
+							//The name of the ping function that we will reference
+							var pingu;
+
+							//Starts the ping. If a pingSuccess isn't received within 13 seconds (approx time of 31 w's which break this) after starting a chunk,
+							//then speechSynthesis.cancel() is called. Dirty workaround.
+							//it throws out a lot of text if an error occurs, but at least it restarts this whole mess for you
+							var startPing = function() {
+							    pingu = setTimeout(function(){ speechSynthesis.cancel(); }, 13000);
+							};
+
+							//calling this function signifies that a speecherror has not occurred.
+							var pingSuccess = function() {
+							    clearTimeout(pingu);
+							};
+
+							//the speecher barkmeow
+							channel.socket.on("chatMessage", function (e) {
+									var iterator=0;
+									for(i=200; i<e.text.length; i+= 200) {
+										for(j=i; j >= iterator; j -= 1) {	
+											if(e.text[j] === " ") {
+												barkmeow = new SpeechSynthesisUtterance(e.text.substring(iterator, j));
+												barkmeow.voice = speechSynthesis.getVoices().filter(function(voice) { return voice.name == bpOverlay.speechName; })[0];
+												barkmeow.onstart = function() { startPing() };
+												barkmeow.onend = function() { pingSuccess(); };
+												speechSynthesis.speak(barkmeow);
+												iterator=j;
+												break;
+											} else if(j == iterator) {
+												barkmeow = new SpeechSynthesisUtterance(e.text.substring(iterator, i));
+												barkmeow.voice = speechSynthesis.getVoices().filter(function(voice) { return voice.name == bpOverlay.speechName; })[0];
+												barkmeow.onstart = function() { startPing() };
+												barkmeow.onend = function() { pingSuccess(); };
+												iterator=i;
+											}					
+										}	
+									}		
+									barkmeow = new SpeechSynthesisUtterance(e.text.substring(iterator, e.text.length));
+									barkmeow.voice = speechSynthesis.getVoices().filter(function(voice) { return voice.name == bpOverlay.speechName; })[0];
+									barkmeow.onstart = function() { startPing() };
+									barkmeow.onend = function() { pingSuccess(); };speechSynthesis.speak(barkmeow);
+									console.log(barkmeow);	//fix for onend not being called at the very end. See stackoverflow. Weird
+								}
+							)
+						} else {
+							channel.socket.listeners("chatMessage").pop();
+						}
+					}
+				);
+
+				generateSettingsElement(
+					tran.t("voiceSelect"),
+					{
+						us: tran.t("voiceOptions.us"),
+						ukMale: tran.t("voiceOptions.ukMale"),
+						ukFem: tran.t("voiceOptions.ukFem"),
+						fran: tran.t("voiceOptions.fran"),
+					},
+					"voiceSelect",
+					function () {
+						var sTabSelect = document.getElementById("voiceSelect");
+						if (sTabSelect.value == "us") {
+							bpOverlay.speechName = "Google US English";
+						}
+						else if(sTabSelect.value == "ukMale") {
+							bpOverlay.speechName = "Google UK English Male";
+						} else if(sTabSelect.value == "ukFem") {
+							bpOverlay.speechName = "Google UK English Female";
+						} else {
+							bpOverlay.speechName = "Google Français";
+						}
+					}
+				
+				);
+
 				document.getElementById("alphaRouletteSelect").value = "off";
 				
 				// Wrap game functions, make the autoscroll/focus buttons.
