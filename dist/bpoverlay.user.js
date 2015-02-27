@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         BombParty Overlay
-// @version      1.4.8 
+// @version      1.4.9
 // @description  Overlay + Utilities for BombParty!
 // @icon         https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/dist/icon.png
 // @icon64       https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/dist/icon64.png
@@ -117,6 +117,10 @@ var source = function() {
 						dragButtonTitle: "Have the scoreboard be in a draggable container instead.",
 						overlaySettingsButtonTitle: "BombParty Overlay Settings",
 						overlaySettingsText: "Overlay Settings",
+						notificationsText: "Notifications",
+						themeH2Text: "Themes",
+						easterText: "Easter eggs",
+						chatOpText: "Chat options",
 						playerListText: "Current Players",
 						creditsText: "Credits",
 						credits1: "Code Monkey",
@@ -215,6 +219,10 @@ var source = function() {
 						dragButtonTitle: "Détacher le tableau des scores.",
 						overlaySettingsButtonTitle: "Paramètres de l'Overlay",
 						overlaySettingsText: "Paramètres",
+						notificationsText: "Notifications",
+						themeH2Text: "Themes",
+						easterText: "Easter eggs",
+						chatOpText: "Chat options",
 						playerListText: "Joueurs connectés",
 						creditsText: "Crédits",
 						credits1: "Code Monkey",
@@ -1749,13 +1757,13 @@ var source = function() {
 			//			'Text, ..., TextN' are the strings that the user see when selecting options
 			//string	'selectId': for your function you probably want to use document.getElementById(selectId)
 			//function	'settingsFunction' is the function that is called on selectElement.onchange
-			var generateSettingsElement = function(itemText, options, selectId, settingsFunction) {
+			var generateSettingsElement = function(itemText, options, selectId, locatorId, settingsFunction) {
 				//Create the text item
 				//Oh god the horrors of navigating the dom DOM DOOOOM
 				
 				// Made it so it keeps appending rows to the same table
 				// As far as I'm aware, I don't think you need a tbody element here
-				var sTabTable = document.getElementById("overlaySettingsTable");
+				var sTabTable = document.getElementById(locatorId);
 				var sTabTr = document.createElement("TR");
 				sTabTable.appendChild(sTabTr);
 				var sTabTd = document.createElement("TD");
@@ -2756,6 +2764,121 @@ var source = function() {
 				sTabTableWrapper.appendChild(sTabTable);
 				settingsTab.appendChild(sTabTableWrapper);
 
+				//Notifications h2
+				var notificationsH2 = document.createElement("H2");
+				notificationsH2.id = "notificationsH2";
+				notificationsH2.textContent = tran.t("notificationsText");
+				notificationsH2.onmouseover=function() {
+					jQ('#notificationsH2').css("text-shadow", "0 0 24px white");
+				};
+
+				notificationsH2.onmouseout=function() {
+					jQ('#notificationsH2').css("text-shadow", "0 0 0px black");
+				};
+
+				notificationsH2.onclick=function() {
+					jQ('#notificationsWrapper').slideToggle('slow');				
+				};
+
+				settingsTab.appendChild(notificationsH2);
+
+
+
+				// Moved over the settings tab things to here
+				// We wrap everything in a div because jquery doesn't handle table smoothly
+				var notTabTableWrapper = document.createElement("DIV");
+				// Wrapper starts hidden
+				notTabTableWrapper.style.display="none";
+				notTabTableWrapper.id="notificationsWrapper";
+				var notTabTable = document.createElement("TABLE");
+				notTabTable.id = "notificationsTable";
+				notTabTableWrapper.appendChild(notTabTable);
+				settingsTab.appendChild(notTabTableWrapper);
+
+				//Chat options h2
+				var chatH2 = document.createElement("H2");
+				chatH2.id = "chatH2";
+				chatH2.textContent = tran.t("chatOpText");
+				chatH2.onmouseover=function() {
+					jQ('#chatH2').css("text-shadow", "0 0 24px white");
+				};
+
+				chatH2.onmouseout=function() {
+					jQ('#chatH2').css("text-shadow", "0 0 0px black");
+				};
+
+				chatH2.onclick=function() {
+					jQ('#chatWrapper').slideToggle('slow');				
+				};
+
+				settingsTab.appendChild(chatH2);
+
+				// Wrapper starts hidden
+				var chatTabTableWrapper = document.createElement("DIV");
+				chatTabTableWrapper.style.display="none";
+				chatTabTableWrapper.id="chatWrapper";
+				var chatTabTable = document.createElement("TABLE");
+				chatTabTable.id = "chatOpTable";
+				chatTabTableWrapper.appendChild(chatTabTable);
+				settingsTab.appendChild(chatTabTableWrapper);
+
+				//Themes h2
+				var themeH2 = document.createElement("H2");
+				themeH2.id = "themeH2";
+				themeH2.textContent = tran.t("themeH2Text");
+				themeH2.onmouseover=function() {
+					jQ('#themeH2').css("text-shadow", "0 0 24px white");
+				};
+
+				themeH2.onmouseout=function() {
+					jQ('#themeH2').css("text-shadow", "0 0 0px black");
+				};
+
+				themeH2.onclick=function() {
+					jQ('#themeWrapper').slideToggle('slow');				
+				};
+
+				settingsTab.appendChild(themeH2);
+
+				// Wrapper starts hidden
+				var themeTabTableWrapper = document.createElement("DIV");
+				themeTabTableWrapper.style.display="none";
+				themeTabTableWrapper.id="themeWrapper";
+				var themeTabTable = document.createElement("TABLE");
+				themeTabTable.id = "themeOpTable";
+				themeTabTableWrapper.appendChild(themeTabTable);
+				settingsTab.appendChild(themeTabTableWrapper);
+
+				//Easter h2
+				var easterH2 = document.createElement("H2");
+				easterH2.id = "easterH2";
+				easterH2.textContent = tran.t("easterText");
+				easterH2.onmouseover=function() {
+					jQ('#easterH2').css("text-shadow", "0 0 24px white");
+				};
+
+				easterH2.onmouseout=function() {
+					jQ('#easterH2').css("text-shadow", "0 0 0px black");
+				};
+
+				easterH2.onclick=function() {
+					jQ('#easterWrapper').slideToggle('slow');				
+				};
+
+				settingsTab.appendChild(easterH2);
+
+				// Wrapper starts hidden
+				var easterTabTableWrapper = document.createElement("DIV");
+				easterTabTableWrapper.style.display="none";
+				easterTabTableWrapper.id="easterWrapper";
+				var easterTabTable = document.createElement("TABLE");
+				easterTabTable.id = "easterTable";
+				easterTabTableWrapper.appendChild(easterTabTable);
+				settingsTab.appendChild(easterTabTableWrapper);
+
+
+
+
 				// Might as well have the current players in here
 				var playerListH2 = document.createElement("H2");
 				playerListH2.id ="PlayerListH2";
@@ -2826,7 +2949,7 @@ var source = function() {
 						compact: tran.t("containerSizeOptions.compact"),
 						fitToPlayers: tran.t("containerSizeOptions.fitToPlayers")
 					},
-					"containerSelect", 
+					"containerSelect", "overlaySettingsTable",
 					function () {
 						//Get the infoTableDiv element and the selector created with the id 'containerSelect'
 						var infoTableDiv = document.getElementsByClassName("infoTableDiv")[0];
@@ -2860,7 +2983,7 @@ var source = function() {
 						on: tran.t("twitchEmotesOptions.on"),
 						off: tran.t("twitchEmotesOptions.off")
 					},
-					"twitchEmoteSelect",
+					"twitchEmoteSelect", "chatOpTable",
 					function () {
 						var teSelect = document.getElementById("twitchEmoteSelect");
 						
@@ -2883,7 +3006,7 @@ var source = function() {
 						off: tran.t("textAdventureOptions.off"),
 						on: tran.t("textAdventureOptions.on")
 					},
-					"adventureSetting",
+					"adventureSetting", "easterTable",
 					function() {
 						var sTabSelect = document.getElementById("adventureSetting");
 						if(sTabSelect.value === "on") {
@@ -2905,7 +3028,7 @@ var source = function() {
 						az: tran.t("hardModesOptions.az"),
 						xz: tran.t("hardModesOptions.xz")
 					},
-					"hardModes",
+					"hardModes", "easterTable",
 					function() {
 						var sTabSelect = document.getElementById("hardModes");
 						if(sTabSelect.value === "rev") {
@@ -2963,7 +3086,7 @@ var source = function() {
 						"https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/themes/xmas/xmas.json": tran.t("themeOptions.xmas"),
 						custom: tran.t("themeOptions.custom"),
 					},
-					"themeSelect",
+					"themeSelect", "themeOpTable",
 					function () {
 						var themeSelect = document.getElementById("themeSelect");
 						if (themeSelect.value === "none") {
@@ -2986,7 +3109,7 @@ var source = function() {
 				// It's wrapped in a anonymous function because
 				// I can't be bothered to make sure the variable names don't conflict
 				(function () {
-					var sTabTable = document.getElementById("overlaySettingsTable");
+					var sTabTable = document.getElementById("themeOpTable");
 					var sTabTr = document.createElement("TR");
 					sTabTr.id = "customThemeRow";
 					sTabTr.style.display = "none";
@@ -3009,7 +3132,7 @@ var source = function() {
 						low: tran.t("particlesOptions.low"),
 						off: tran.t("particlesOptions.off")
 					},
-					"particleSelect",
+					"particleSelect", "themeOpTable",
 					function () {
 						var sTabSelect = document.getElementById("particleSelect");
 						if(sTabSelect.value === "high") {
@@ -3029,7 +3152,7 @@ var source = function() {
 						on: tran.t("notificationOptions.on"),
 						off: tran.t("notificationOptions.off"),
 					},
-					"notificationsSelect",
+					"notificationsSelect", "notificationsTable",
 					function () {
 						var sTabSelect = document.getElementById("notificationsSelect");
 						if (sTabSelect.value == "on") {
@@ -3043,7 +3166,7 @@ var source = function() {
 				
 				// This one's a slider!
 				(function () {
-					var sTabTable = document.getElementById("overlaySettingsTable");
+					var sTabTable = document.getElementById("notificationsTable");
 					var sTabTr = document.createElement("TR");
 					sTabTable.appendChild(sTabTr);
 					var sTabTd = document.createElement("TD");
@@ -3067,7 +3190,7 @@ var source = function() {
 				
 				// And another, because this one's an input
 				(function () {
-					var sTabTable = document.getElementById("overlaySettingsTable");
+					var sTabTable = document.getElementById("notificationsTable");
 					var sTabTr = document.createElement("TR");
 					sTabTr.id = "notificationSettingsRow";
 					sTabTable.appendChild(sTabTr);
@@ -3100,7 +3223,7 @@ var source = function() {
 						on: tran.t("endGameNotificationOptions.on"),
 						off: tran.t("endGameNotificationOptions.off"),
 					},
-					"endGameNotificationSelect",
+					"endGameNotificationSelect", "notificationsTable",
 					function () {
 						var sTabSelect = document.getElementById("endGameNotificationSelect");
 						if (sTabSelect.value == "on") {
@@ -3125,7 +3248,7 @@ var source = function() {
 						on: tran.t("alphaRouletteOptions.on"),
 						off: tran.t("alphaRouletteOptions.off"),
 					},
-					"alphaRouletteSelect",
+					"alphaRouletteSelect", "overlaySettingsTable",
 					function () {
 						var sTabSelect = document.getElementById("alphaRouletteSelect");
 						if (sTabSelect.value == "on") {
@@ -3144,7 +3267,7 @@ var source = function() {
 						off: tran.t("speechOptions.off"),
 						on: tran.t("speechOptions.on"),
 					},
-					"speechSelect",
+					"speechSelect", "chatOpTable",
 					function() {
 						var sTabSelect = document.getElementById("speechSelect");
 						if(sTabSelect.value == "on") {
@@ -3206,7 +3329,7 @@ var source = function() {
 						ukFem: tran.t("voiceOptions.ukFem"),
 						fran: tran.t("voiceOptions.fran"),
 					},
-					"voiceSelect",
+					"voiceSelect", "chatOpTable",
 					function () {
 						var sTabSelect = document.getElementById("voiceSelect");
 						if (sTabSelect.value == "us") {
