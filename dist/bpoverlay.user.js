@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         BombParty Overlay
-// @version      1.4.9
+// @version      1.5.0
 // @description  Overlay + Utilities for BombParty!
 // @icon         https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/dist/icon.png
 // @icon64       https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/dist/icon64.png
@@ -184,6 +184,11 @@ var source = function() {
 							on: "On",
 							off: "Off",
 						},
+						scoreName: "Leaderboard score",
+						scoreOption: {
+							on: "On",
+							off: "Off",
+						},
 						jqvText: "That word didn't contain J, Q nor V!",
 						azText: "You are on letter {l} Kappa!",
 						xzText: "That word didn't contain X nor Z!",
@@ -286,6 +291,11 @@ var source = function() {
 						   on: "Activé",
 						   off: "Désactivé",
 						  },
+						scoreName: "Leaderboard score",
+						scoreOption: {
+							on: "On",
+							off: "Off",
+						},
 						jqvText: "Ce mot ne contient ni J, ni V, ni Q.",
 						azText: "Au tour de la lettre {l} Kappa !",
 						xzText: "Ce mot ne contient ni X, ni Z !",
@@ -338,6 +348,7 @@ var source = function() {
 			// Tidy container for storing "global" variables.
 			bpOverlay = {
 				playerNames: {}, // Stores player name by actor index
+				playerScores: Array.apply(null, new Array(20)).map(Number.prototype.valueOf,0), // Stores player's score by actor index
 				playerAuthId: {}, // Stores actor index by authId
 				lostLives: {}, // Stores lost lives by actor index
 				flips: {}, // Stores flips by actor index
@@ -390,6 +401,11 @@ var source = function() {
 				endGameNotification: false,
 	
 				speechName: "Google UK English Male",	//Default voice
+				
+				//Letter scores based on the formula ((10 - (pure integer value of percentage))*3). floored at 1. Why this formula? Just because. :D 
+				letterScore: { a: 5, b: 25, c: 21, d: 17, e: 1, f: 23, g: 24, h: 12, i: 9, j: 30, k:27, l:18, m:22, n:10, o:7, p:24, q:30, r:12, s:11, t:3, u:22, v:27, w:23, x:30, y:24, z:30},
+				scoreMode: false,
+			
 			};
 			
 			// Store all the game images so they can be changed
@@ -1438,6 +1454,51 @@ var source = function() {
 			
 			//////////////////////////////////////////////
 			// END of most of the custom theme code
+
+			//Creates a score notifier in ca. the middle of the screen
+			var scoreNotifier = function(points) {
+				var scoreDiv = document.createElement("whatever");
+				scoreDiv.innerHTML="<p style='color: yellow; font-size: 300%'>" + points;
+				scoreDiv.id = "scoreDiv";
+				scoreDiv.draggable = "true";
+				scoreDiv.style.position = "absolute";
+				scoreDiv.style.left = window.innerWidth / 3 + "px"; 
+				scoreDiv.style.top = window.innerHeight / 2 + "px"; 
+				scoreDiv.style.width = window.innerWidth / 2 + "px";
+				scoreDiv.style.background = "rgb(20, 20, 20, 0)";
+				document.body.appendChild(scoreDiv);
+			
+				jQ('#scoreDiv').animate({"top":"20px", "opacity":"0"}, 1000, function() {
+					document.getElementById("scoreDiv").parentNode.removeChild(document.getElementById("scoreDiv"));
+				});
+			};
+
+			var updateScores = function() {
+
+				var stupidSort = [];
+				for(i=0; i<Object.keys(bpOverlay.playerNames).length; i++) {
+					var temp = {names: bpOverlay.playerNames[i], score: bpOverlay.playerScores[i]};
+					stupidSort.push(temp);			
+				}
+
+				stupidSort.sort(function(a, b) {
+					return b.score - a.score;		
+				});
+
+				var lTab = document.getElementById("LeaderboardTab");
+				lTab.innerHTML = "<table>";
+				var names="";
+				for(i=0; i<Object.keys(bpOverlay.playerNames).length; i++) {
+				if(stupidSort[i].names.length > 14) {
+					names = stupidSort[i].names.substring(0,14);
+				} else {
+					names = stupidSort[i].names;
+				}
+					lTab.innerHTML += "<br><tr><td>" + names + "</td><td> --- </td><td>" + stupidSort[i].score + "</td></tr>";
+				}
+				lTab.innerHTML += "</table>";
+			};
+
 			
 			// This function is called whenever a new round begins.
 			var generateActorConditions = function() {
@@ -2272,6 +2333,7 @@ var source = function() {
 						var lockedLetters = t.lockedLetters.slice();
 						var lastWord = t.lastWord.toLowerCase();
 						var prevExp = lockedLetters.length;
+						var scoreSum = 0;
 						// Remove the letters of the last word that a person used
 						// from the letters they need to flip
 						for (i = 0; i < lastWord.length; i++) {
@@ -2279,8 +2341,20 @@ var source = function() {
 							if ((index = lockedLetters.indexOf(lastWord[i])) != -1) {
 								lockedLetters.splice(index, 1);
 							}
+
+							if(bpOverlay.scoreMode) {
+								scoreSum += bpOverlay.letterScore[lastWord[i]];
+							}
+
+							
 						}
 						var experience = prevExp - lockedLetters.length;
+
+						if(bpOverlay.scoreMode) {
+							scoreNotifier(bpOverlay.playerNames[playerNum] + " " + scoreSum);
+							bpOverlay.playerScores[playerNum] += scoreSum;
+							updateScores();
+						}
 
 						// Update the alpha thing
 						if (lastWord[0].toLowerCase() === bpOverlay.alphabet[bpOverlay.alpha[playerNum].progress]) {
@@ -2301,6 +2375,11 @@ var source = function() {
 						if (flipped) {
 							// Append one to the flip counter
 							bpOverlay.flips[playerNum] += 1;
+
+							if(bpOverlay.scoreMode) {
+								bpOverlay.playerScores[playerNum] += 100;
+								scoreNotifier(bpOverlay.playerNames[playerNum] + " FLIP BONUS");
+							}
 
 							// If the box is created, update it too
 							if (bpOverlay.boxHasBeenCreated || bpOverlay.dragBoxHasBeenCreated) {
@@ -2465,6 +2544,9 @@ var source = function() {
 						
 						// Update the time timer as it might be 1 second behind
 						updateTime();
+
+						//Reset the playerScores
+						bpOverlay.playerScores = Array.apply(null, new Array(20)).map(Number.prototype.valueOf,0);
 
 					} finally {
 						// Call the actual game function
@@ -3015,6 +3097,26 @@ var source = function() {
 							toggleTextAdventure(false);
 						} else {
 							toggleTextAdventure(false);
+						}
+					}
+				);
+
+				//Score setting
+				generateSettingsElement(
+					tran.t("scoreName"),
+					{
+						off: tran.t("scoreOption.off"),
+						on: tran.t("scoreOption.on"),
+					},
+					"scoreSetting", "easterTable",
+					function() {
+						var sTabSelect = document.getElementById("scoreSetting");
+						if(sTabSelect.value === "on") {
+							bpOverlay.scoreMode=true;
+						} else {
+							bpOverlay.scoreMode=false;
+							var meowswitch = document.getElementById("LeaderboardTab");
+							meowswitch.innerHTML=" ";
 						}
 					}
 				);
