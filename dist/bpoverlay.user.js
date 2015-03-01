@@ -180,6 +180,10 @@ var source = function() {
 							on: "On",
 							off: "Off",
 						},
+						muted: "(muted)",
+						muteUser: "Mute",
+						unmuteUser: "Unmute",
+						ignoringText: "Muted Users",
 						jqvText: "That word didn't contain J, Q nor V!",
 						azText: "You are on letter {l} Kappa!",
 						xzText: "That word didn't contain X nor Z!",
@@ -2524,15 +2528,7 @@ var source = function() {
 					playerCount.title = title;
 					
 					// Get the playerListDiv
-					if (!(document.getElementById("PlayerList"))) {
-						var settingsTab = document.getElementById("overlaySettingsTab");
-						var playerListDiv = document.createElement("DIV");
-						playerListDiv.id = "PlayerList";
-						settingsTab.appendChild(playerListDiv);
-					}
-					else {
-						var playerListDiv = document.getElementById("PlayerList");
-					}
+					var playerListDiv = document.getElementById("PlayerList");
 					
 					// Make the innerHTML
 					var PDIH = "";
@@ -2568,7 +2564,7 @@ var source = function() {
 									}
 								}
 						})
-						 .call(this), a.push("<span" + jade.attr("title", l.join(", "), !0, !1) + ' class="User">'), "" != e.role && a.push("<span" + jade.attr("title", n.t("nuclearnode:userRoles." + e.role), !0, !1) + jade.cls(["UserRole_" + e.role], [!0]) + "></span> "), a.push(jade.escape(null == (t = e.displayName) ? "" : t)), a.push('<span class="Actions">'), ["host", "hubAdministrator", "moderator"].indexOf(r.user.role) && (a.push('<button' + jade.attr("data-auth-id", e.authId, !0, !1) + jade.attr("data-display-name", e.displayName, !0, !1) + ' class="BanUser">' + jade.escape(null == (t = n.t("nuclearnode:chat.ban")) ? "" : t) + "</button>"), ("host" == r.user.role || "hubAdministrator" == r.user.role) && a.push("<button" + jade.attr("data-auth-id", e.authId, !0, !1) + jade.attr("data-display-name", e.displayName, !0, !1) + ' class="ModUser">' + jade.escape(null == (t = n.t("nuclearnode:chat.mod")) ? "" : t) + "</button>")), a.push("<button" + jade.attr("data-auth-id", e.authId, !0, !1) + jade.attr("data-display-name", e.displayName, !0, !1) + ' class="MuteUser">' + tran.t("muteUser") + "</button>"), a.push("</span>"), a.push("</span>")
+						 .call(this), a.push("<span" + jade.attr("title", l.join(", "), !0, !1) + ' class="User">'), "" != e.role && a.push("<span" + jade.attr("title", n.t("nuclearnode:userRoles." + e.role), !0, !1) + jade.cls(["UserRole_" + e.role], [!0]) + "></span> "), a.push(jade.escape(null == (t = e.displayName) ? "" : t)), a.push('<span class="Actions">'), ("moderator" == r.user.role || "host" == r.user.role || "hubAdministrator" == r.user.role) && (a.push('<button' + jade.attr("data-auth-id", e.authId, !0, !1) + jade.attr("data-display-name", e.displayName, !0, !1) + ' class="BanUser">' + jade.escape(null == (t = n.t("nuclearnode:chat.ban")) ? "" : t) + "</button>"), ("host" == r.user.role || "hubAdministrator" == r.user.role) && a.push("<button" + jade.attr("data-auth-id", e.authId, !0, !1) + jade.attr("data-display-name", e.displayName, !0, !1) + ' class="ModUser">' + jade.escape(null == (t = n.t("nuclearnode:chat.mod")) ? "" : t) + "</button>")), a.push("<button" + jade.attr("data-auth-id", e.authId, !0, !1) + jade.attr("data-display-name", e.displayName, !0, !1) + ' class="MuteUser">' + tran.t("muteUser") + "</button>"), a.push("</span>"), a.push("</span>")
 						
 						PDIH += a.join("");
 						PDIH += "<br />";
@@ -2582,6 +2578,55 @@ var source = function() {
 				channel.socket.on("removeUser", changePlayerText);
 				channel.socket.on("setUserRole", changePlayerText);
 				changePlayerText();
+				
+				// Update the muted player text
+				var updateMuted = function () {
+					var ignoringDiv = jQ("#IgnoringListDiv")[0];
+					var innerHTML = "";
+					var ignoring_any = false;
+					for (var i in bpOverlay.ignoring) {
+						innerHTML += "<span title=\"" + i + "\">" + bpOverlay.ignoring[i] + "<span class=\"Actions\"><button class=\"UnmuteUser\" data-auth-id=\"" + i + "\">" + tran.t("unmuteUser") + "</button></span></span><br />"
+						ignoring_any = true;
+					}
+					if (!ignoring_any) {
+						innerHTML = "Nobody is currently muted.";
+					}
+					ignoringDiv.innerHTML = innerHTML;
+					ignoringDiv.dataset.json = JSON.stringify(bpOverlay.ignoring);
+				}
+				
+				// Expose this to the globals so the GM script has access to it
+				setMuted = function (jsonString) {
+					bpOverlay.ignoring = JSON.parse(jsonString);
+					for (var i in bpOverlay.ignoring) {
+						var toMute = jQ(".Author-" + i.replace(/:/g, "_"));
+						for (var j = 0; j < toMute.length; i++) {
+							toMute[j].style.opacity = .4;
+						}
+					}
+					updateMuted();
+				}
+				
+				// Click wrapper
+				// Pls put any document.click actions in here
+				document.addEventListener("click", function (e) {
+					if ("BUTTON" === e.target.tagName) {
+						if (e.target.className === "MuteUser") {
+							bpOverlay.ignoring[e.target.dataset.authId] = e.target.dataset.displayName;
+							var toMute = jQ(".Author-" + e.target.dataset.authId.replace(/:/g, "_"));
+							for (var i = 0; i < toMute.length; i++) {
+								toMute[i].style.opacity = .4;
+							}
+							updateMuted();
+							return;
+						}
+						else if (e.target.className === "UnmuteUser") {
+							delete bpOverlay.ignoring[e.target.dataset.authId];
+							updateMuted();
+							return;
+						}
+					}
+				});
 			};
 
 			// Code that needs to be run when the bot activates.
@@ -2590,7 +2635,7 @@ var source = function() {
 				// Probably a better way of doing this
 				// Lol. TFW web-console css is hard
 				var style = document.createElement('style');
-				style.appendChild(document.createTextNode('.headerButtonDiv {  display: -webkit-box;  display: -moz-box;  display: -webkit-flex;  display: -ms-flexbox;  display: box;  display: flex;  opacity: 0.3;  -ms-filter: "progid:DXImageTransform.Microsoft.Alpha(Opacity=30)";  filter: alpha(opacity=30);} .headerButtonDiv:hover {  opacity: 1;  -ms-filter: none;  filter: none;} button.headerButton {  border: none;  background: none;  cursor: pointer;  opacity: 0.5;  -ms-filter: "progid:DXImageTransform.Microsoft.Alpha(Opacity=50)";  filter: alpha(opacity=50);  display: -webkit-box;  display: -moz-box;  display: -webkit-flex;  display: -ms-flexbox;  display: box;  display: flex;} button.headerButton:hover {  opacity: 0.8;  -ms-filter: "progid:DXImageTransform.Microsoft.Alpha(Opacity=80)";  filter: alpha(opacity=80);} button.headerButton:active {  opacity: 1;  -ms-filter: none;  filter: none;} .infoTableDiv::-webkit-scrollbar { width: 15px; height: 15px; } .infoTableDiv::-webkit-scrollbar-button { height: 0px; width: 0px; } .infoTableDiv::-webkit-scrollbar-track { background-color: rgba(0,0,0,0.05); } .infoTableDiv::-webkit-scrollbar-thumb { background-color: rgba(255,255,255,0.1); border: 3px solid transparent; -webkit-border-radius: 6px; border-radius: 6px; -webkit-background-clip: content; -moz-background-clip: content; background-clip: content-box; } .infoTableDiv::-webkit-scrollbar-thumb:hover { background-color: rgba(255,255,255,0.15); } .infoTableDiv::-webkit-scrollbar-corner { background-color: rgba(255,255,255,0.1); }#overlaySettingsTab{text-align:left;overflow-y:auto}#overlaySettingsTab h2{padding:.5em .5em 0;opacity:.5;-ms-filter:"alpha(Opacity=50)";filter:alpha(opacity=50)}#overlaySettingsTab table{width:100%;padding:.5em}#overlaySettingsTab table tr td:nth-child(1){width:40%}#overlaySettingsTab table tr td:nth-child(2){width:60%}#overlaySettingsTab table button:not(.UnbanUser),#overlaySettingsTab table input,#overlaySettingsTab table select,#overlaySettingsTab table textarea{width:100%;background:#444;border:none;padding:.25em;color:#fff;font:inherit}#overlaySettingsTab table textarea{resize:vertical;min-height:3em}#overlaySettingsTab table ul{list-style:none}#overlaySettingsTab .User .UserRole_hubAdministrator:before{content:\'[★]\';cursor:default;color:#c63}#overlaySettingsTab .User .UserRole_host:before{content:\'★\';cursor:default;color:#dc8}#overlaySettingsTab .User .UserRole_administrator:before{content:\'☆\';cursor:default;color:#dc8}#overlaySettingsTab .User .UserRole_moderator:before{content:\'●\';cursor:default;color:#346192}#overlaySettingsTab .Actions button{border:none;background:0 0;cursor:pointer;margin:0 .25em;outline:0;font-weight:400;font-size:smaller;opacity:.8;-ms-filter:"alpha(Opacity=80)";filter:alpha(opacity=80)}#overlaySettingsTab .Actions button.BanUser{color:#a00}#overlaySettingsTab .Actions button.ModUser,#overlaySettingsTab .Actions button.UnmodUser{color:#2a3}#overlaySettingsTab .Actions button:hover{opacity:1;-ms-filter:none;filter:none}#overlaySettingsTab .Actions button:active{background:rgba(255,0,0,.2)}#overlaySettingsTab input{-moz-user-select:text;-webkit-user-select:text;-ms-user-select:text}#ChatLog .highlighted{background: rgba(255, 0, 0, 0.05);}#ChatLog .highlighted:hover {background: rgba(255, 0, 0, 0.1);}#bpContextMenu {background:#ffffff;position:absolute;min-width:150px;border:1px solid #0000ff}#contextList {list-style-type:none;padding:-2px 0px 0px 0px;margin:0;}.contextMenuButton {text-align:left;width:100%;background:#ffffff;border:none;whitespace:no-wrap;}.contextMenuButton:hover {background:#aeaeff;}'));
+				style.appendChild(document.createTextNode('.headerButtonDiv {  display: -webkit-box;  display: -moz-box;  display: -webkit-flex;  display: -ms-flexbox;  display: box;  display: flex;  opacity: 0.3;  -ms-filter: "progid:DXImageTransform.Microsoft.Alpha(Opacity=30)";  filter: alpha(opacity=30);} .headerButtonDiv:hover {  opacity: 1;  -ms-filter: none;  filter: none;} button.headerButton {  border: none;  background: none;  cursor: pointer;  opacity: 0.5;  -ms-filter: "progid:DXImageTransform.Microsoft.Alpha(Opacity=50)";  filter: alpha(opacity=50);  display: -webkit-box;  display: -moz-box;  display: -webkit-flex;  display: -ms-flexbox;  display: box;  display: flex;} button.headerButton:hover {  opacity: 0.8;  -ms-filter: "progid:DXImageTransform.Microsoft.Alpha(Opacity=80)";  filter: alpha(opacity=80);} button.headerButton:active {  opacity: 1;  -ms-filter: none;  filter: none;} .infoTableDiv::-webkit-scrollbar { width: 15px; height: 15px; } .infoTableDiv::-webkit-scrollbar-button { height: 0px; width: 0px; } .infoTableDiv::-webkit-scrollbar-track { background-color: rgba(0,0,0,0.05); } .infoTableDiv::-webkit-scrollbar-thumb { background-color: rgba(255,255,255,0.1); border: 3px solid transparent; -webkit-border-radius: 6px; border-radius: 6px; -webkit-background-clip: content; -moz-background-clip: content; background-clip: content-box; } .infoTableDiv::-webkit-scrollbar-thumb:hover { background-color: rgba(255,255,255,0.15); } .infoTableDiv::-webkit-scrollbar-corner { background-color: rgba(255,255,255,0.1); }#overlaySettingsTab{text-align:left;overflow-y:auto}#overlaySettingsTab h2{padding:.5em .5em 0;opacity:.5;-ms-filter:"alpha(Opacity=50)";filter:alpha(opacity=50)}#overlaySettingsTab h3{padding:.5em .5em 0;opacity:.5;-ms-filter:"alpha(Opacity=50)";filter:alpha(opacity=50)}#overlaySettingsTab table{width:100%;padding:.5em}#overlaySettingsTab table tr td:nth-child(1){width:40%}#overlaySettingsTab table tr td:nth-child(2){width:60%}#overlaySettingsTab table button:not(.UnbanUser),#overlaySettingsTab table input,#overlaySettingsTab table select,#overlaySettingsTab table textarea{width:100%;background:#444;border:none;padding:.25em;color:#fff;font:inherit}#overlaySettingsTab table textarea{resize:vertical;min-height:3em}#overlaySettingsTab table ul{list-style:none}#overlaySettingsTab .User .UserRole_hubAdministrator:before{content:\'[★]\';cursor:default;color:#c63}#overlaySettingsTab .User .UserRole_host:before{content:\'★\';cursor:default;color:#dc8}#overlaySettingsTab .User .UserRole_administrator:before{content:\'☆\';cursor:default;color:#dc8}#overlaySettingsTab .User .UserRole_moderator:before{content:\'●\';cursor:default;color:#346192}#overlaySettingsTab .Actions button{border:none;background:0 0;cursor:pointer;margin:0 .25em;outline:0;font-weight:400;font-size:smaller;opacity:.8;-ms-filter:"alpha(Opacity=80)";filter:alpha(opacity=80)}#overlaySettingsTab .Actions button.BanUser{color:#a00}#overlaySettingsTab .Actions button.ModUser,#overlaySettingsTab .Actions button.UnmodUser{color:#2a3} .Actions button.MuteUser{color:#ddd} .Actions button.UnmuteUser{color:#eee} #overlaySettingsTab .Actions button:hover{opacity:1;-ms-filter:none;filter:none}#overlaySettingsTab .Actions button:active{background:rgba(255,0,0,.2)}#overlaySettingsTab input{-moz-user-select:text;-webkit-user-select:text;-ms-user-select:text}#ChatLog .highlighted{background: rgba(255, 0, 0, 0.05);}#ChatLog .highlighted:hover {background: rgba(255, 0, 0, 0.1);}#bpContextMenu {background:#ffffff;position:absolute;min-width:150px;border:1px solid #0000ff}#contextList {list-style-type:none;padding:-2px 0px 0px 0px;margin:0;}.contextMenuButton {text-align:left;width:100%;background:#ffffff;border:none;whitespace:no-wrap;}.contextMenuButton:hover {background:#aeaeff;}'));
 				document.getElementsByTagName('head')[0].appendChild(style);
 				
 				// Load the hideDead on/off images
@@ -2807,7 +2852,7 @@ var source = function() {
 				playerListH2.id ="PlayerListH2";
 				playerListH2.textContent = tran.t("playerListText");
 				playerListH2.onclick = function() {
-					jQ('#PlayerList').slideToggle('slow');				
+					jQ('#PlayerListWrapper').slideToggle('slow');				
 				};
 
 
@@ -2820,15 +2865,38 @@ var source = function() {
 				};
 
 				settingsTab.appendChild(playerListH2);
+				var playerListWrapper = document.createElement("DIV");
+				playerListWrapper.id = "PlayerListWrapper";
+				playerListWrapper.style.display = "none";
+				playerListWrapper.style.marginLeft = "8px";
+				settingsTab.appendChild(playerListWrapper)
 				
 				var playerListDiv = document.createElement("DIV");
 				playerListDiv.id = "PlayerList";
-				playerListDiv.style.display="none";
 				playerListDiv.style.marginLeft = "8px";
-				settingsTab.appendChild(playerListDiv);
+				playerListWrapper.appendChild(playerListDiv);
+				
+				var ignoringListH3 = document.createElement("H3");
+				ignoringListH3.id = "IgnoringListH3";
+				ignoringListH3.textContent = tran.t("ignoringText");
+				ignoringListH3.onclick = function () {
+					jQ('#IgnoringListDiv').slideToggle('slow');
+				};
+				ignoringListH3.onmouseover=function() {
+					jQ('#IgnoringListH3').css("text-shadow", "0 0 24px white");
+				};
+
+				ignoringListH3.onmouseout=function() {
+					jQ('#IgnoringListH3').css("text-shadow", "0 0 0px black");
+				};
+				playerListWrapper.appendChild(ignoringListH3);
 				
 				var ignoringListDiv = document.createElement("DIV");
-				// TODO
+				ignoringListDiv.id = "IgnoringListDiv";
+				ignoringListDiv.style.display = "none";
+				ignoringListDiv.marginLeft = "8px";
+				playerListWrapper.appendChild(ignoringListDiv);
+				ignoringListDiv.textContent = "Nobody is currently muted.";
 				
 				// A little attribution table
 				var creditsH2 = document.createElement("H2");
