@@ -254,7 +254,7 @@ Your JSON file should now look something like this:
 
 Remember that you need a comma to separate adjacent name-value pairs.
 
-The CSS object is fairly simple: just write ```"css": { "url": "http://path/to/your/css/file" }``` after your `images` object.
+The CSS object is fairly simple: just write ```"css": { "src": "http://path/to/your/css/file" }``` after your `images` object.
 
 Your JSON file should now look something like this:  
 ```JSON
@@ -274,7 +274,7 @@ Your JSON file should now look something like this:
         }
     },
     "css": {
-        "url": "https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/themes/xmas/style.css"
+        "src": "https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/themes/xmas/style.css"
     }
 }
 ``` 
@@ -325,7 +325,7 @@ So finally, you should have a file that looks like this:
         }
     },
     "css": {
-        "url": "https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/themes/xmas/style.css"
+        "src": "https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/themes/xmas/style.css"
     },
     "textStyles": {
         "statusText": {
