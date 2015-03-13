@@ -1088,9 +1088,11 @@ var source = function() {
 							document.getElementsByTagName('head')[0].appendChild(style);
 						}
 						else if (themeObj.css.src) {
-							var style = document.createElement('style');
+							var style = document.createElement('link');
 							style.id = "customThemeStyle";
-							style.src = themeObj.css.src;
+							style.rel = "stylesheet";
+							style.type = "text/css";
+							style.href = themeObj.css.src;
 							document.getElementsByTagName('head')[0].appendChild(style);
 						}
 						else {
@@ -2913,10 +2915,10 @@ var source = function() {
 				//Define and activate the onclick function for our fourth button
 				function overlaySettingsFunction() {
 					for(i=0; i<=2; i++) {
-						document.getElementById("SidebarTabButtons").children[i].setAttribute("class", "");	//Prevent two active classes
+						document.getElementById("SidebarTabButtons").children[i].classList.remove("Active");	//Prevent two active classes
 					}
 					for(i=0; i<=2; i++) {
-						document.getElementById("SidebarTabs").children[i].setAttribute("class", "");		//Prevent two active classes
+						document.getElementById("SidebarTabs").children[i].classList.remove("Active");		//Prevent two active classes
 					}
 
 					document.getElementById("overlaySettingsButton").setAttribute("class", "Active");
