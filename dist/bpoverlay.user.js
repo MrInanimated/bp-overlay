@@ -1049,6 +1049,10 @@ var source = function() {
 				if (themeObj && !bpOverlay.isThemed) {
 					bpOverlay.isThemed = true;
 				
+					// Grab the canvas and its context
+					var canvas = document.getElementById("GameCanvas");
+					var ctx = canvas.getContext("2d");
+				
 					// Add and replace images if necessary
 					if (themeObj.images) {
 						for (var i in themeObj.images) {
@@ -1107,10 +1111,6 @@ var source = function() {
 						else {
 							console.log("Error: no particle images defined. Will try to execute anyway");
 						}
-						
-						// Grab the canvas and its context
-						var canvas = document.getElementById("GameCanvas");
-						var ctx = canvas.getContext("2d");
 						
 						var lastTime = (new Date).getTime();
 						
@@ -3504,92 +3504,96 @@ var source = function() {
 					}
 				);
 				
-				//oh boy. Here we go with the speech element
-				generateSettingsElement(
-					tran.t("speechName"),
-					{
-						off: tran.t("speechOptions.off"),
-						on: tran.t("speechOptions.on"),
-					},
-					"speechSelect", "chatOpTable",
-					function() {
-						var sTabSelect = document.getElementById("speechSelect");
-						if(sTabSelect.value == "on") {
-							//The name of the ping function that we will reference
-							var pingu;
-
-							//Starts the ping. If a pingSuccess isn't received within 13 seconds (approx time of 31 w's which break this) after starting a chunk,
-							//then speechSynthesis.cancel() is called. Dirty workaround.
-							//it throws out a lot of text if an error occurs, but at least it restarts this whole mess for you
-							var startPing = function() {
-							    pingu = setTimeout(function(){ speechSynthesis.cancel(); }, 13000);
-							};
-
-							//calling this function signifies that a speecherror has not occurred.
-							var pingSuccess = function() {
-							    clearTimeout(pingu);
-							};
-
-							//the speecher barkmeow
-							channel.socket.on("chatMessage", function (e) {
-									var iterator=0;
-									for(i=200; i<e.text.length; i+= 200) {
-										for(j=i; j >= iterator; j -= 1) {	
-											if(e.text[j] === " ") {
-												barkmeow = new SpeechSynthesisUtterance(e.text.substring(iterator, j));
-												barkmeow.voice = speechSynthesis.getVoices().filter(function(voice) { return voice.name == bpOverlay.speechName; })[0];
-												barkmeow.onstart = function() { startPing() };
-												barkmeow.onend = function() { pingSuccess(); };
-												speechSynthesis.speak(barkmeow);
-												iterator=j;
-												break;
-											} else if(j == iterator) {
-												barkmeow = new SpeechSynthesisUtterance(e.text.substring(iterator, i));
-												barkmeow.voice = speechSynthesis.getVoices().filter(function(voice) { return voice.name == bpOverlay.speechName; })[0];
-												barkmeow.onstart = function() { startPing() };
-												barkmeow.onend = function() { pingSuccess(); };
-												iterator=i;
-											}					
-										}	
-									}		
-									barkmeow = new SpeechSynthesisUtterance(e.text.substring(iterator, e.text.length));
+				// Only add this if speech synthesis is supported by the browser
+				if (window.speechSynthesis) {
+					var speechListener = function (e) {
+						var iterator=0;
+						for(i=200; i<e.text.length; i+= 200) {
+							for(j=i; j >= iterator; j -= 1) {	
+								if(e.text[j] === " ") {
+									barkmeow = new SpeechSynthesisUtterance(e.text.substring(iterator, j));
 									barkmeow.voice = speechSynthesis.getVoices().filter(function(voice) { return voice.name == bpOverlay.speechName; })[0];
 									barkmeow.onstart = function() { startPing() };
-									barkmeow.onend = function() { pingSuccess(); };speechSynthesis.speak(barkmeow);
-									console.log(barkmeow);	//fix for onend not being called at the very end. See stackoverflow. Weird
-								}
-							)
-						} else {
-							channel.socket.listeners("chatMessage").pop();
-						}
+									barkmeow.onend = function() { pingSuccess(); };
+									speechSynthesis.speak(barkmeow);
+									iterator=j;
+									break;
+								} else if(j == iterator) {
+									barkmeow = new SpeechSynthesisUtterance(e.text.substring(iterator, i));
+									barkmeow.voice = speechSynthesis.getVoices().filter(function(voice) { return voice.name == bpOverlay.speechName; })[0];
+									barkmeow.onstart = function() { startPing() };
+									barkmeow.onend = function() { pingSuccess(); };
+									iterator=i;
+								}					
+							}	
+						}		
+						barkmeow = new SpeechSynthesisUtterance(e.text.substring(iterator, e.text.length));
+						barkmeow.voice = speechSynthesis.getVoices().filter(function(voice) { return voice.name == bpOverlay.speechName; })[0];
+						barkmeow.onstart = function() { startPing() };
+						barkmeow.onend = function() { pingSuccess(); };speechSynthesis.speak(barkmeow);
+						console.log(barkmeow);	//fix for onend not being called at the very end. See stackoverflow. Weird
 					}
-				);
+					
+					//oh boy. Here we go with the speech element
+					generateSettingsElement(
+						tran.t("speechName"),
+						{
+							off: tran.t("speechOptions.off"),
+							on: tran.t("speechOptions.on"),
+						},
+						"speechSelect", "chatOpTable",
+						function() {
+							var sTabSelect = document.getElementById("speechSelect");
+							if(sTabSelect.value == "on") {
+								//The name of the ping function that we will reference
+								var pingu;
 
-				generateSettingsElement(
-					tran.t("voiceSelect"),
-					{
-						us: tran.t("voiceOptions.us"),
-						ukMale: tran.t("voiceOptions.ukMale"),
-						ukFem: tran.t("voiceOptions.ukFem"),
-						fran: tran.t("voiceOptions.fran"),
-					},
-					"voiceSelect", "chatOpTable",
-					function () {
-						var sTabSelect = document.getElementById("voiceSelect");
-						if (sTabSelect.value == "us") {
-							bpOverlay.speechName = "Google US English";
+								//Starts the ping. If a pingSuccess isn't received within 13 seconds (approx time of 31 w's which break this) after starting a chunk,
+								//then speechSynthesis.cancel() is called. Dirty workaround.
+								//it throws out a lot of text if an error occurs, but at least it restarts this whole mess for you
+								var startPing = function() {
+									pingu = setTimeout(function(){ speechSynthesis.cancel(); }, 13000);
+								};
+
+								//calling this function signifies that a speecherror has not occurred.
+								var pingSuccess = function() {
+									clearTimeout(pingu);
+								};
+
+								//the speecher barkmeow
+								channel.socket.on("chatMessage", speechListener);
+							} else {
+								channel.socket.removeListener("chatMessage", speechListener);
+							}
 						}
-						else if(sTabSelect.value == "ukMale") {
-							bpOverlay.speechName = "Google UK English Male";
-						} else if(sTabSelect.value == "ukFem") {
-							bpOverlay.speechName = "Google UK English Female";
-						} else {
-							bpOverlay.speechName = "Google Français";
+					);
+
+					generateSettingsElement(
+						tran.t("voiceSelect"),
+						{
+							us: tran.t("voiceOptions.us"),
+							ukMale: tran.t("voiceOptions.ukMale"),
+							ukFem: tran.t("voiceOptions.ukFem"),
+							fran: tran.t("voiceOptions.fran"),
+						},
+						"voiceSelect", "chatOpTable",
+						function () {
+							var sTabSelect = document.getElementById("voiceSelect");
+							if (sTabSelect.value == "us") {
+								bpOverlay.speechName = "Google US English";
+							}
+							else if(sTabSelect.value == "ukMale") {
+								bpOverlay.speechName = "Google UK English Male";
+							} else if(sTabSelect.value == "ukFem") {
+								bpOverlay.speechName = "Google UK English Female";
+							} else {
+								bpOverlay.speechName = "Google Français";
+							}
 						}
-					}
+					
+					);
+				}
 				
-				);
-
 				document.getElementById("alphaRouletteSelect").value = "off";
 				
 				// Wrap game functions, make the autoscroll/focus buttons.
@@ -3818,6 +3822,9 @@ var validateThemeObj = function (themeObj) {
 	}
 	
 	var validateTextStyle = function (textStyle) {
+		if (textStyle === undefined) {
+			return true;
+		}
 		if (typeof(textStyle) === "object") {
 			if (typeof(textStyle.color) !== "undefined") {
 				if (typeof(textStyle.color) !== "string") {
