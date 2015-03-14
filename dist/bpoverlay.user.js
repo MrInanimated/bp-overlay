@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         BombParty Overlay
-// @version      1.4.7
+// @version      1.5.1
 // @description  Overlay + Utilities for BombParty!
 // @icon         https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/dist/icon.png
 // @icon64       https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/dist/icon64.png
@@ -117,6 +117,10 @@ var source = function() {
 						dragButtonTitle: "Have the scoreboard be in a draggable container instead.",
 						overlaySettingsButtonTitle: "BombParty Overlay Settings",
 						overlaySettingsText: "Overlay Settings",
+						notificationsText: "Notifications",
+						themeH2Text: "Themes",
+						easterText: "Easter Eggs",
+						chatOpText: "Chat Options",
 						playerListText: "Current Players",
 						creditsText: "Credits",
 						credits1: "Code Monkey",
@@ -180,10 +184,32 @@ var source = function() {
 							on: "On",
 							off: "Off",
 						},
+						muted: "(muted)",
+						muteUser: "Mute",
+						unmuteUser: "Unmute",
+						ignoringText: "Muted Users",
+						ignoringEmpty: "Nobody is currently muted.",
+						scoreName: "Leaderboard score",
+						scoreOption: {
+							on: "On",
+							off: "Off",
+						},
 						jqvText: "That word didn't contain J, Q nor V!",
 						azText: "You are on letter {l} Kappa!",
 						xzText: "That word didn't contain X nor Z!",
-						updateText: "New Update! (2015-02-08)<br />Settings are now in a collapsible container. Just click on 'Overlay Settings', 'Current Players' or 'Credits' to reveal the appropriate content.",
+						speechName: "Speech on Chrome<sup>BETA</sup>",
+						speechOptions: {
+							on: "On",
+							off: "Off",
+						},
+						voiceSelect: "Voice",
+						voiceOptions: {
+							us: "US",
+							ukMale: "GB Male",
+							ukFem: "GB Female",
+							fran: "FR",
+						},
+						updateText: "New Update! (2015-03-141592653)<br />Leaderboard Score, experimental text-to-speech in chat, reorganized BpOS tab, various bug fixes.",
 					},
 					fr: {
 						timeText: "Temps Écoulé : ",
@@ -203,6 +229,10 @@ var source = function() {
 						dragButtonTitle: "Détacher le tableau des scores.",
 						overlaySettingsButtonTitle: "Paramètres de l'Overlay",
 						overlaySettingsText: "Paramètres",
+						notificationsText: "Notifications",
+						themeH2Text: "Thèmes",
+						easterText: "Easter eggs",
+						chatOpText: "Paramètres du Tchat",
 						playerListText: "Joueurs connectés",
 						creditsText: "Crédits",
 						credits1: "Code Monkey",
@@ -266,10 +296,32 @@ var source = function() {
 						   on: "Activé",
 						   off: "Désactivé",
 						  },
+						muted: "(muted)",
+						muteUser: "Ignorer",
+						unmuteUser: "Autoriser",
+						ignoringText: "Utilisateurs ignorés",
+						ignoringEmpty: "Personne n'est ignoré actuellement.",
+						scoreName: "Score Classement",
+						scoreOption: {
+							on: "Activé",
+							off: "Désactivé",
+						},
 						jqvText: "Ce mot ne contient ni J, ni V, ni Q.",
 						azText: "Au tour de la lettre {l} Kappa !",
 						xzText: "Ce mot ne contient ni X, ni Z !",
-						updateText: "Nouvelle mise à jour ! (2015-02-08)<br />Les paramètres sont maintenant dans un menu déroulant. Cliquer sur 'Paramètres', 'Joueurs' ou 'Crédits' pour révéler le contenu correspondant.",
+						speechName: "Vocale sur Chrome<sup>BETA</sup>",
+						speechOptions: {
+							on: "Activé",
+							off: "Désactivé",
+						},
+						voiceSelect: "Voix",
+						voiceOptions: {
+							us: "US",
+							ukMale: "GB Homme",
+							ukFem: "GB Femme",
+							fran: "FR",
+						},
+						updateText: "Nouvelle mise à jour! (2015-03-141592653)<br />Tableau des scores, reconnaissance vocale dans le chat, réorganisation du BpOS, correction de bugs.",
 					},
 				},
 				language: (document.cookie.indexOf("i18next=fr") !== -1 ? "fr" : "en"),
@@ -306,6 +358,7 @@ var source = function() {
 			// Tidy container for storing "global" variables.
 			bpOverlay = {
 				playerNames: {}, // Stores player name by actor index
+				playerScores: Array.apply(null, new Array(20)).map(Number.prototype.valueOf,0), // Stores player's score by actor index
 				playerAuthId: {}, // Stores actor index by authId
 				lostLives: {}, // Stores lost lives by actor index
 				flips: {}, // Stores flips by actor index
@@ -356,6 +409,14 @@ var source = function() {
 				notifications: true,
 				
 				endGameNotification: false,
+				
+				ignoring: {},
+	
+				speechName: "Google UK English Male",	//Default voice
+				
+				//Letter scores based on the formula ((10 - (pure integer value of percentage))*3). floored at 1. Why this formula? Just because. :D 
+				letterScore: { a: 5, b: 25, c: 21, d: 17, e: 1, f: 23, g: 24, h: 12, i: 9, j: 30, k:27, l:18, m:22, n:10, o:7, p:24, q:30, r:12, s:11, t:3, u:22, v:27, w:23, x:30, y:24, z:30},
+				scoreMode: false,
 			};
 			
 			// Store all the game images so they can be changed
@@ -994,6 +1055,10 @@ var source = function() {
 				if (themeObj && !bpOverlay.isThemed) {
 					bpOverlay.isThemed = true;
 				
+					// Grab the canvas and its context
+					var canvas = document.getElementById("GameCanvas");
+					var ctx = canvas.getContext("2d");
+				
 					// Add and replace images if necessary
 					if (themeObj.images) {
 						for (var i in themeObj.images) {
@@ -1029,9 +1094,11 @@ var source = function() {
 							document.getElementsByTagName('head')[0].appendChild(style);
 						}
 						else if (themeObj.css.src) {
-							var style = document.createElement('style');
+							var style = document.createElement('link');
 							style.id = "customThemeStyle";
-							style.src = themeObj.css.src;
+							style.rel = "stylesheet";
+							style.type = "text/css";
+							style.href = themeObj.css.src;
 							document.getElementsByTagName('head')[0].appendChild(style);
 						}
 						else {
@@ -1052,10 +1119,6 @@ var source = function() {
 						else {
 							console.log("Error: no particle images defined. Will try to execute anyway");
 						}
-						
-						// Grab the canvas and its context
-						var canvas = document.getElementById("GameCanvas");
-						var ctx = canvas.getContext("2d");
 						
 						var lastTime = (new Date).getTime();
 						
@@ -1404,6 +1467,51 @@ var source = function() {
 			
 			//////////////////////////////////////////////
 			// END of most of the custom theme code
+
+			//Creates a score notifier in ca. the middle of the screen
+			var scoreNotifier = function(points) {
+				var scoreDiv = document.createElement("whatever");
+				scoreDiv.innerHTML="<p style='color: yellow; font-size: 300%'>" + points;
+				scoreDiv.id = "scoreDiv";
+				scoreDiv.draggable = "true";
+				scoreDiv.style.position = "absolute";
+				scoreDiv.style.left = window.innerWidth / 3 + "px"; 
+				scoreDiv.style.top = window.innerHeight / 2 + "px"; 
+				scoreDiv.style.width = window.innerWidth / 2 + "px";
+				scoreDiv.style.background = "rgb(20, 20, 20, 0)";
+				document.body.appendChild(scoreDiv);
+			
+				jQ('#scoreDiv').animate({"top":"20px", "opacity":"0"}, 1000, function() {
+					document.getElementById("scoreDiv").parentNode.removeChild(document.getElementById("scoreDiv"));
+				});
+			};
+
+			var updateScores = function() {
+
+				var stupidSort = [];
+				for(i=0; i<Object.keys(bpOverlay.playerNames).length; i++) {
+					var temp = {names: bpOverlay.playerNames[i], score: bpOverlay.playerScores[i]};
+					stupidSort.push(temp);			
+				}
+
+				stupidSort.sort(function(a, b) {
+					return b.score - a.score;		
+				});
+
+				var lTab = document.getElementById("LeaderboardTab");
+				lTab.innerHTML = "<table>";
+				var names="";
+				for(i=0; i<Object.keys(bpOverlay.playerNames).length; i++) {
+				if(stupidSort[i].names.length > 14) {
+					names = stupidSort[i].names.substring(0,14);
+				} else {
+					names = stupidSort[i].names;
+				}
+					lTab.innerHTML += "<br><tr><td>" + names + "</td><td> --- </td><td>" + stupidSort[i].score + "</td></tr>";
+				}
+				lTab.innerHTML += "</table>";
+			};
+
 			
 			// This function is called whenever a new round begins.
 			var generateActorConditions = function() {
@@ -1716,6 +1824,66 @@ var source = function() {
 
 			}
 
+			// Make a context menu.
+			// Unfinished at the current time
+			var createContextMenu = function () {
+			
+				var contextMenu = document.createElement("DIV");
+				contextMenu.id = "bpContextMenu";
+				contextMenu.style.background = "#ffffff";
+				contextMenu.style.border = "1px solid #0000ff";
+				contextMenu.style.display = "none";
+				contextMenu.style.position = "absolute";
+				contextMenu.style.minWidth = "150px";
+				contextMenu.innerHTML = "\
+					<ul id=\"contextList\" style=\"list-style-type: none;\">\
+						<li><button id=\"contextBan\" class=\"contextMenuButton\">Ban </button></li>\
+						<li><button id=\"contextMod\" class=\"contextMenuButton\">Mod </button></li>\
+					</ul>\
+				";
+				
+				document.addEventListener("click", function (e) {
+					console.log(e.button);
+					if (e.button === 0 || e.target.className !== "User") {
+						contextMenu.style.display = "none";
+					}
+				});
+				
+				document.addEventListener("contextmenu", function (e) {
+					if (e.target.className === "User" && e.target.dataset.authId && channel.data.usersByAuthId[e.target.dataset.authId]) {
+						var contextMenuBan = document.getElementById("contextBan");
+						var contextMenuMod = document.getElementById("contextMod");
+						contextMenu.style.display = "";
+						
+						contextMenuBan.textContent = "Ban " + name;
+						contextMenuMod.textContent = "Mod " + name;
+						
+						var x = e.clientX;
+						var y = e.clientY;
+						var width = window.innerWidth - 3;
+						var height = window.innerHeight - 3;
+						if (x + contextMenu.clientWidth > width) {
+							x = width - contextMenu.clientWidth;
+						}
+						if (y + contextMenu.clientHeight > height) {
+							y = height - contextMenu.clientHeight;
+						}
+						
+						contextMenu.style.left = x + "px";
+						contextMenu.style.top = y + "px";
+						
+						var authId = e.target.dataset.authId;
+						var name = channel.data.usersByAuthId[authId].displayName;
+
+						contextMenuBan.dataset.authId = authId;
+						contextMenuMod.dataset.authId = authId;
+						e.preventDefault();
+					}
+				});
+				
+				document.body.appendChild(contextMenu);
+			};
+			
 			//Usage: 	generateSettingsElement(itemText, options, selectId, settingsFunction)
 			//string	'itemText' is the text to the right of the drop down options pane
 			//object	'options' is an object {value: Text, value2: Text2, ... , valueN: TextN}
@@ -1723,13 +1891,13 @@ var source = function() {
 			//			'Text, ..., TextN' are the strings that the user see when selecting options
 			//string	'selectId': for your function you probably want to use document.getElementById(selectId)
 			//function	'settingsFunction' is the function that is called on selectElement.onchange
-			var generateSettingsElement = function(itemText, options, selectId, settingsFunction) {
+			var generateSettingsElement = function(itemText, options, selectId, locatorId, settingsFunction) {
 				//Create the text item
 				//Oh god the horrors of navigating the dom DOM DOOOOM
 				
 				// Made it so it keeps appending rows to the same table
 				// As far as I'm aware, I don't think you need a tbody element here
-				var sTabTable = document.getElementById("overlaySettingsTable");
+				var sTabTable = document.getElementById(locatorId);
 				var sTabTr = document.createElement("TR");
 				sTabTable.appendChild(sTabTr);
 				var sTabTd = document.createElement("TD");
@@ -1922,46 +2090,48 @@ var source = function() {
 				// I guess I'm wrapping this as well
 				channel.socket.listeners("chatMessage").pop();
 				channel.socket.on("chatMessage", function(e) {
-					var notified = false;
-					var index;
-					if (e.text) {
-						var lowercaseText = e.text.toLowerCase();
-						if (bpOverlay.notifications) {
-							if ((index = lowercaseText.indexOf(app.user.displayName.toLowerCase())) !== -1) {
-								if ((index === 0 || lowercaseText[index-1].search(/\W/) !== -1) &&
-									(index + app.user.displayName.length >= lowercaseText.length || lowercaseText[index + app.user.displayName.length].search(/\W/) !== -1)) {
-									if (document.hidden) {
-										bpOverlay.notificationSound.play();
+					if (!bpOverlay.ignoring[e.userAuthId]) {
+						var notified = false;
+						var index;
+						if (e.text) {
+							var lowercaseText = e.text.toLowerCase();
+							if (bpOverlay.notifications) {
+								if ((index = lowercaseText.indexOf(app.user.displayName.toLowerCase())) !== -1) {
+									if ((index === 0 || lowercaseText[index-1].search(/\W/) !== -1) &&
+										(index + app.user.displayName.length >= lowercaseText.length || lowercaseText[index + app.user.displayName.length].search(/\W/) !== -1)) {
+										if (document.hidden) {
+											bpOverlay.notificationSound.play();
+										}
+										notified = true;
 									}
-									notified = true;
 								}
-							}
-							else {
-								var i = 0;
-								for (; i < bpOverlay.alias.length; i++) {
-									if ((index = lowercaseText.indexOf(bpOverlay.alias[i])) !== -1) {
-										if ((index === 0 || lowercaseText[index-1].search(/\W/) !== -1) &&
-											(index + bpOverlay.alias[i].length >= lowercaseText.length || lowercaseText[index + bpOverlay.alias[i].length].search(/\W/) !== -1)) {
-											if (document.hidden) {
-												bpOverlay.notificationSound.play();
+								else {
+									var i = 0;
+									for (; i < bpOverlay.alias.length; i++) {
+										if ((index = lowercaseText.indexOf(bpOverlay.alias[i])) !== -1) {
+											if ((index === 0 || lowercaseText[index-1].search(/\W/) !== -1) &&
+												(index + bpOverlay.alias[i].length >= lowercaseText.length || lowercaseText[index + bpOverlay.alias[i].length].search(/\W/) !== -1)) {
+												if (document.hidden) {
+													bpOverlay.notificationSound.play();
+												}
+												notified = true;
+												break;
 											}
-											notified = true;
-											break;
 										}
 									}
 								}
 							}
 						}
+					
+						null != e.userAuthId ? channel.appendToChat("Message Author-" + e.userAuthId.replace(/:/g, "_") + (notified ? " highlighted" : ""), JST["nuclearnode/chatMessage"]({
+							text: e.text,
+							author: JST["nuclearnode/chatUser"]({
+								user: channel.data.usersByAuthId[e.userAuthId],
+								i18n: i18n,
+								app: app
+							})
+						})) : channel.appendToChat("Info" + (notified ? " highlighted" : ""), i18n.t("nuclearnode:chat." + e.text))
 					}
-				
-					null != e.userAuthId ? channel.appendToChat("Message Author-" + e.userAuthId.replace(/:/g, "_") + (notified ? " highlighted" : ""), JST["nuclearnode/chatMessage"]({
-						text: e.text,
-						author: JST["nuclearnode/chatUser"]({
-							user: channel.data.usersByAuthId[e.userAuthId],
-							i18n: i18n,
-							app: app
-						})
-					})) : channel.appendToChat("Info" + (notified ? " highlighted" : ""), i18n.t("nuclearnode:chat." + e.text))
 				});
 			
 				// Screw your function for handling chat messages, Elisee
@@ -2008,13 +2178,19 @@ var source = function() {
 									}
 								}
 						})
-						.call(this), a.push("<span" + jade.attr("title", l.join(", "), !0, !1) + ' class="User">'), "" != e.role && a.push("<span" + jade.attr("title", n.t("nuclearnode:userRoles." + e.role), !0, !1) + jade.cls(["UserRole_" + e.role], [!0]) + "></span> "), a.push(jade.escape(null == (t = e.displayName) ? "" : t)), a.push("</span>")
+						.call(this), a.push("<span" + jade.attr("title", l.join(", "), !0, !1) + (e.authId ? jade.attr("data-auth-id", e.authId, !0, !1) : "") + ' class="User">'), "" != e.role && a.push("<span" + jade.attr("title", n.t("nuclearnode:userRoles." + e.role), !0, !1) + jade.cls(["UserRole_" + e.role], [!0]) + "></span> "), a.push(jade.escape(null == (t = e.displayName) ? "" : t)), a.push("</span>")
 						// Got rid of the Ban and Mod buttons from the line above
 					}.call(this, "user" in n ? n.user : "undefined" != typeof user ? user : void 0, "i18n" in n ? n.i18n : "undefined" != typeof i18n ? i18n : void 0, "app" in n ? n.app : "undefined" != typeof app ? app : void 0), a.join("")
 				}
 				// Those buttons are being rid of so we don't accidentally ban people when trying to chat
 				// A list of people that you can ban will be provided
 				
+				// Context menus!
+				document.body.addEventListener("contextmenu", function (e) {
+					if (e.target.className === "User" && e.target.dataset.authId) {
+						e.preventDefault();
+					}
+				});
 			
 				// Chat message wrapper
 				var gameChat = channel.appendToChat;
@@ -2238,6 +2414,7 @@ var source = function() {
 						var lockedLetters = t.lockedLetters.slice();
 						var lastWord = t.lastWord.toLowerCase();
 						var prevExp = lockedLetters.length;
+						var scoreSum = 0;
 						// Remove the letters of the last word that a person used
 						// from the letters they need to flip
 						for (i = 0; i < lastWord.length; i++) {
@@ -2245,8 +2422,20 @@ var source = function() {
 							if ((index = lockedLetters.indexOf(lastWord[i])) != -1) {
 								lockedLetters.splice(index, 1);
 							}
+
+							if(bpOverlay.scoreMode) {
+								scoreSum += bpOverlay.letterScore[lastWord[i]];
+							}
+
+							
 						}
 						var experience = prevExp - lockedLetters.length;
+
+						if(bpOverlay.scoreMode) {
+							scoreNotifier(bpOverlay.playerNames[playerNum] + " " + scoreSum);
+							bpOverlay.playerScores[playerNum] += scoreSum;
+							updateScores();
+						}
 
 						// Update the alpha thing
 						if (lastWord[0].toLowerCase() === bpOverlay.alphabet[bpOverlay.alpha[playerNum].progress]) {
@@ -2267,6 +2456,11 @@ var source = function() {
 						if (flipped) {
 							// Append one to the flip counter
 							bpOverlay.flips[playerNum] += 1;
+
+							if(bpOverlay.scoreMode) {
+								bpOverlay.playerScores[playerNum] += 100;
+								scoreNotifier(bpOverlay.playerNames[playerNum] + " FLIP BONUS");
+							}
 
 							// If the box is created, update it too
 							if (bpOverlay.boxHasBeenCreated || bpOverlay.dragBoxHasBeenCreated) {
@@ -2432,6 +2626,9 @@ var source = function() {
 						// Update the time timer as it might be 1 second behind
 						updateTime();
 
+						//Reset the playerScores
+						bpOverlay.playerScores = Array.apply(null, new Array(20)).map(Number.prototype.valueOf,0);
+
 					} finally {
 						// Call the actual game function
 						gameEndGame(actorName);
@@ -2454,15 +2651,7 @@ var source = function() {
 					playerCount.title = title;
 					
 					// Get the playerListDiv
-					if (!(document.getElementById("PlayerList"))) {
-						var settingsTab = document.getElementById("overlaySettingsTab");
-						var playerListDiv = document.createElement("DIV");
-						playerListDiv.id = "PlayerList";
-						settingsTab.appendChild(playerListDiv);
-					}
-					else {
-						var playerListDiv = document.getElementById("PlayerList");
-					}
+					var playerListDiv = document.getElementById("PlayerList");
 					
 					// Make the innerHTML
 					var PDIH = "";
@@ -2498,7 +2687,7 @@ var source = function() {
 									}
 								}
 						})
-						 .call(this), a.push("<span" + jade.attr("title", l.join(", "), !0, !1) + ' class="User">'), "" != e.role && a.push("<span" + jade.attr("title", n.t("nuclearnode:userRoles." + e.role), !0, !1) + jade.cls(["UserRole_" + e.role], [!0]) + "></span> "), a.push(jade.escape(null == (t = e.displayName) ? "" : t)), -1 != ["host", "hubAdministrator", "moderator"].indexOf(r.user.role) && (a.push('<span class="Actions"><button' + jade.attr("data-auth-id", e.authId, !0, !1) + jade.attr("data-display-name", e.displayName, !0, !1) + ' class="BanUser">' + jade.escape(null == (t = n.t("nuclearnode:chat.ban")) ? "" : t) + "</button>"), ("host" == r.user.role || "hubAdministrator" == r.user.role) && a.push("<button" + jade.attr("data-auth-id", e.authId, !0, !1) + jade.attr("data-display-name", e.displayName, !0, !1) + ' class="ModUser">' + jade.escape(null == (t = n.t("nuclearnode:chat.mod")) ? "" : t) + "</button>"), a.push("</span>")), a.push("</span>")
+						 .call(this), a.push("<span" + jade.attr("title", l.join(", "), !0, !1) + ' class="User">'), "" != e.role && a.push("<span" + jade.attr("title", n.t("nuclearnode:userRoles." + e.role), !0, !1) + jade.cls(["UserRole_" + e.role], [!0]) + "></span> "), a.push(jade.escape(null == (t = e.displayName) ? "" : t)), a.push('<span class="Actions">'), ("moderator" == r.user.role || "host" == r.user.role || "hubAdministrator" == r.user.role) && (a.push('<button' + jade.attr("data-auth-id", e.authId, !0, !1) + jade.attr("data-display-name", e.displayName, !0, !1) + ' class="BanUser">' + jade.escape(null == (t = n.t("nuclearnode:chat.ban")) ? "" : t) + "</button>"), ("host" == r.user.role || "hubAdministrator" == r.user.role) && a.push("<button" + jade.attr("data-auth-id", e.authId, !0, !1) + jade.attr("data-display-name", e.displayName, !0, !1) + ' class="ModUser">' + jade.escape(null == (t = n.t("nuclearnode:chat.mod")) ? "" : t) + "</button>")), a.push("<button" + jade.attr("data-auth-id", e.authId, !0, !1) + jade.attr("data-display-name", e.displayName, !0, !1) + ' class="MuteUser">' + tran.t("muteUser") + "</button>"), a.push("</span>"), a.push("</span>")
 						
 						PDIH += a.join("");
 						PDIH += "<br />";
@@ -2512,6 +2701,55 @@ var source = function() {
 				channel.socket.on("removeUser", changePlayerText);
 				channel.socket.on("setUserRole", changePlayerText);
 				changePlayerText();
+				
+				// Update the muted player text
+				var updateMuted = function () {
+					var ignoringDiv = jQ("#IgnoringListDiv")[0];
+					var innerHTML = "";
+					var ignoring_any = false;
+					for (var i in bpOverlay.ignoring) {
+						innerHTML += "<span title=\"" + i + "\">" + bpOverlay.ignoring[i] + "<span class=\"Actions\"><button class=\"UnmuteUser\" data-auth-id=\"" + i + "\">" + tran.t("unmuteUser") + "</button></span></span><br />"
+						ignoring_any = true;
+					}
+					if (!ignoring_any) {
+						innerHTML = tran.t("ignoringEmpty");
+					}
+					ignoringDiv.innerHTML = innerHTML;
+					ignoringDiv.dataset.json = JSON.stringify(bpOverlay.ignoring);
+				}
+				
+				// Expose this to the globals so the GM script has access to it
+				setMuted = function (jsonString) {
+					bpOverlay.ignoring = JSON.parse(jsonString);
+					for (var i in bpOverlay.ignoring) {
+						var toMute = jQ(".Author-" + i.replace(/:/g, "_"));
+						for (var j = 0; j < toMute.length; i++) {
+							toMute[j].style.opacity = .4;
+						}
+					}
+					updateMuted();
+				}
+				
+				// Click wrapper
+				// Pls put any document.click actions in here
+				document.addEventListener("click", function (e) {
+					if ("BUTTON" === e.target.tagName) {
+						if (e.target.className === "MuteUser") {
+							bpOverlay.ignoring[e.target.dataset.authId] = e.target.dataset.displayName;
+							var toMute = jQ(".Author-" + e.target.dataset.authId.replace(/:/g, "_"));
+							for (var i = 0; i < toMute.length; i++) {
+								toMute[i].style.opacity = .4;
+							}
+							updateMuted();
+							return;
+						}
+						else if (e.target.className === "UnmuteUser") {
+							delete bpOverlay.ignoring[e.target.dataset.authId];
+							updateMuted();
+							return;
+						}
+					}
+				});
 			};
 
 			// Code that needs to be run when the bot activates.
@@ -2520,7 +2758,7 @@ var source = function() {
 				// Probably a better way of doing this
 				// Lol. TFW web-console css is hard
 				var style = document.createElement('style');
-				style.appendChild(document.createTextNode('.headerButtonDiv {  display: -webkit-box;  display: -moz-box;  display: -webkit-flex;  display: -ms-flexbox;  display: box;  display: flex;  opacity: 0.3;  -ms-filter: "progid:DXImageTransform.Microsoft.Alpha(Opacity=30)";  filter: alpha(opacity=30);} .headerButtonDiv:hover {  opacity: 1;  -ms-filter: none;  filter: none;} button.headerButton {  border: none;  background: none;  cursor: pointer;  opacity: 0.5;  -ms-filter: "progid:DXImageTransform.Microsoft.Alpha(Opacity=50)";  filter: alpha(opacity=50);  display: -webkit-box;  display: -moz-box;  display: -webkit-flex;  display: -ms-flexbox;  display: box;  display: flex;} button.headerButton:hover {  opacity: 0.8;  -ms-filter: "progid:DXImageTransform.Microsoft.Alpha(Opacity=80)";  filter: alpha(opacity=80);} button.headerButton:active {  opacity: 1;  -ms-filter: none;  filter: none;} .infoTableDiv::-webkit-scrollbar { width: 15px; height: 15px; } .infoTableDiv::-webkit-scrollbar-button { height: 0px; width: 0px; } .infoTableDiv::-webkit-scrollbar-track { background-color: rgba(0,0,0,0.05); } .infoTableDiv::-webkit-scrollbar-thumb { background-color: rgba(255,255,255,0.1); border: 3px solid transparent; -webkit-border-radius: 6px; border-radius: 6px; -webkit-background-clip: content; -moz-background-clip: content; background-clip: content-box; } .infoTableDiv::-webkit-scrollbar-thumb:hover { background-color: rgba(255,255,255,0.15); } .infoTableDiv::-webkit-scrollbar-corner { background-color: rgba(255,255,255,0.1); }#overlaySettingsTab{text-align:left;overflow-y:auto}#overlaySettingsTab h2{padding:.5em .5em 0;opacity:.5;-ms-filter:"alpha(Opacity=50)";filter:alpha(opacity=50)}#overlaySettingsTab table{width:100%;padding:.5em}#overlaySettingsTab table tr td:nth-child(1){width:40%}#overlaySettingsTab table tr td:nth-child(2){width:60%}#overlaySettingsTab table button:not(.UnbanUser),#overlaySettingsTab table input,#overlaySettingsTab table select,#overlaySettingsTab table textarea{width:100%;background:#444;border:none;padding:.25em;color:#fff;font:inherit}#overlaySettingsTab table textarea{resize:vertical;min-height:3em}#overlaySettingsTab table ul{list-style:none}#overlaySettingsTab .User .UserRole_hubAdministrator:before{content:\'[★]\';cursor:default;color:#c63}#overlaySettingsTab .User .UserRole_host:before{content:\'★\';cursor:default;color:#dc8}#overlaySettingsTab .User .UserRole_administrator:before{content:\'☆\';cursor:default;color:#dc8}#overlaySettingsTab .User .UserRole_moderator:before{content:\'●\';cursor:default;color:#346192}#overlaySettingsTab .Actions button{border:none;background:0 0;cursor:pointer;margin:0 .25em;outline:0;font-weight:400;font-size:smaller;opacity:.8;-ms-filter:"alpha(Opacity=80)";filter:alpha(opacity=80)}#overlaySettingsTab .Actions button.BanUser{color:#a00}#overlaySettingsTab .Actions button.ModUser,#overlaySettingsTab .Actions button.UnmodUser{color:#2a3}#overlaySettingsTab .Actions button:hover{opacity:1;-ms-filter:none;filter:none}#overlaySettingsTab .Actions button:active{background:rgba(255,0,0,.2)}#overlaySettingsTab input{-moz-user-select:text;-webkit-user-select:text;-ms-user-select:text}#ChatLog .highlighted{background: rgba(255, 0, 0, 0.05);}#ChatLog .highlighted:hover {background: rgba(255, 0, 0, 0.1);}'));
+				style.appendChild(document.createTextNode('.headerButtonDiv {  display: -webkit-box;  display: -moz-box;  display: -webkit-flex;  display: -ms-flexbox;  display: box;  display: flex;  opacity: 0.3;  -ms-filter: "progid:DXImageTransform.Microsoft.Alpha(Opacity=30)";  filter: alpha(opacity=30);} .headerButtonDiv:hover {  opacity: 1;  -ms-filter: none;  filter: none;} button.headerButton {  border: none;  background: none;  cursor: pointer;  opacity: 0.5;  -ms-filter: "progid:DXImageTransform.Microsoft.Alpha(Opacity=50)";  filter: alpha(opacity=50);  display: -webkit-box;  display: -moz-box;  display: -webkit-flex;  display: -ms-flexbox;  display: box;  display: flex;} button.headerButton:hover {  opacity: 0.8;  -ms-filter: "progid:DXImageTransform.Microsoft.Alpha(Opacity=80)";  filter: alpha(opacity=80);} button.headerButton:active {  opacity: 1;  -ms-filter: none;  filter: none;} .infoTableDiv::-webkit-scrollbar { width: 15px; height: 15px; } .infoTableDiv::-webkit-scrollbar-button { height: 0px; width: 0px; } .infoTableDiv::-webkit-scrollbar-track { background-color: rgba(0,0,0,0.05); } .infoTableDiv::-webkit-scrollbar-thumb { background-color: rgba(255,255,255,0.1); border: 3px solid transparent; -webkit-border-radius: 6px; border-radius: 6px; -webkit-background-clip: content; -moz-background-clip: content; background-clip: content-box; } .infoTableDiv::-webkit-scrollbar-thumb:hover { background-color: rgba(255,255,255,0.15); } .infoTableDiv::-webkit-scrollbar-corner { background-color: rgba(255,255,255,0.1); }#overlaySettingsTab{text-align:left;overflow-y:auto}#overlaySettingsTab h2{padding:.5em .5em 0;opacity:.5;-ms-filter:"alpha(Opacity=50)";filter:alpha(opacity=50)}#overlaySettingsTab h3{padding:.5em .5em 0;opacity:.5;-ms-filter:"alpha(Opacity=50)";filter:alpha(opacity=50)}#overlaySettingsTab table{width:100%;padding:.5em}#overlaySettingsTab table tr td:nth-child(1){width:40%}#overlaySettingsTab table tr td:nth-child(2){width:60%}#overlaySettingsTab table button:not(.UnbanUser),#overlaySettingsTab table input,#overlaySettingsTab table select,#overlaySettingsTab table textarea{width:100%;background:#444;border:none;padding:.25em;color:#fff;font:inherit}#overlaySettingsTab table textarea{resize:vertical;min-height:3em}#overlaySettingsTab table ul{list-style:none}#overlaySettingsTab .User .UserRole_hubAdministrator:before{content:\'[★]\';cursor:default;color:#c63}#overlaySettingsTab .User .UserRole_host:before{content:\'★\';cursor:default;color:#dc8}#overlaySettingsTab .User .UserRole_administrator:before{content:\'☆\';cursor:default;color:#dc8}#overlaySettingsTab .User .UserRole_moderator:before{content:\'●\';cursor:default;color:#346192}#overlaySettingsTab .Actions button{border:none;background:0 0;cursor:pointer;margin:0 .25em;outline:0;font-weight:400;font-size:smaller;opacity:.8;-ms-filter:"alpha(Opacity=80)";filter:alpha(opacity=80)}#overlaySettingsTab .Actions button.BanUser{color:#a00}#overlaySettingsTab .Actions button.ModUser,#overlaySettingsTab .Actions button.UnmodUser{color:#2a3} .Actions button.MuteUser{color:#ddd} .Actions button.UnmuteUser{color:#eee} #overlaySettingsTab .Actions button:hover{opacity:1;-ms-filter:none;filter:none}#overlaySettingsTab .Actions button:active{background:rgba(255,0,0,.2)}#overlaySettingsTab input{-moz-user-select:text;-webkit-user-select:text;-ms-user-select:text}#ChatLog .highlighted{background: rgba(255, 0, 0, 0.05);}#ChatLog .highlighted:hover {background: rgba(255, 0, 0, 0.1);}#bpContextMenu {background:#ffffff;position:absolute;min-width:150px;border:1px solid #0000ff}#contextList {list-style-type:none;padding:-2px 0px 0px 0px;margin:0;}.contextMenuButton {text-align:left;width:100%;background:#ffffff;border:none;whitespace:no-wrap;}.contextMenuButton:hover {background:#aeaeff;}'));
 				document.getElementsByTagName('head')[0].appendChild(style);
 				
 				// Load the hideDead on/off images
@@ -2655,6 +2893,10 @@ var source = function() {
 					}
 				);
 				
+				// Make the context menu.
+				// Temporarily disabled.
+				//createContextMenu();
+				
 				//Add the fourth button on the settingsTab that hopefully doesn't interfere with the others.
 				var sideButtons = document.getElementById("SidebarTabButtons");
 				var sideTabs    = document.getElementById("SidebarTabs");
@@ -2679,10 +2921,10 @@ var source = function() {
 				//Define and activate the onclick function for our fourth button
 				function overlaySettingsFunction() {
 					for(i=0; i<=2; i++) {
-						document.getElementById("SidebarTabButtons").children[i].setAttribute("class", "");	//Prevent two active classes
+						document.getElementById("SidebarTabButtons").children[i].classList.remove("Active");	//Prevent two active classes
 					}
 					for(i=0; i<=2; i++) {
-						document.getElementById("SidebarTabs").children[i].setAttribute("class", "");		//Prevent two active classes
+						document.getElementById("SidebarTabs").children[i].classList.remove("Active");		//Prevent two active classes
 					}
 
 					document.getElementById("overlaySettingsButton").setAttribute("class", "Active");
@@ -2717,8 +2959,6 @@ var source = function() {
 				var settingsTab = document.getElementById("overlaySettingsTab");
 				settingsTab.appendChild(bpOverlayH2);
 				
-				
-				
 				// Moved over the settings tab things to here
 				// We wrap everything in a div because jquery doesn't handle table smoothly
 				var sTabTableWrapper = document.createElement("DIV");
@@ -2730,12 +2970,127 @@ var source = function() {
 				sTabTableWrapper.appendChild(sTabTable);
 				settingsTab.appendChild(sTabTableWrapper);
 
+				//Notifications h2
+				var notificationsH2 = document.createElement("H2");
+				notificationsH2.id = "notificationsH2";
+				notificationsH2.textContent = tran.t("notificationsText");
+				notificationsH2.onmouseover=function() {
+					jQ('#notificationsH2').css("text-shadow", "0 0 24px white");
+				};
+
+				notificationsH2.onmouseout=function() {
+					jQ('#notificationsH2').css("text-shadow", "0 0 0px black");
+				};
+
+				notificationsH2.onclick=function() {
+					jQ('#notificationsWrapper').slideToggle('slow');				
+				};
+
+				settingsTab.appendChild(notificationsH2);
+
+
+
+				// Moved over the settings tab things to here
+				// We wrap everything in a div because jquery doesn't handle table smoothly
+				var notTabTableWrapper = document.createElement("DIV");
+				// Wrapper starts hidden
+				notTabTableWrapper.style.display="none";
+				notTabTableWrapper.id="notificationsWrapper";
+				var notTabTable = document.createElement("TABLE");
+				notTabTable.id = "notificationsTable";
+				notTabTableWrapper.appendChild(notTabTable);
+				settingsTab.appendChild(notTabTableWrapper);
+
+				//Chat options h2
+				var chatH2 = document.createElement("H2");
+				chatH2.id = "chatH2";
+				chatH2.textContent = tran.t("chatOpText");
+				chatH2.onmouseover=function() {
+					jQ('#chatH2').css("text-shadow", "0 0 24px white");
+				};
+
+				chatH2.onmouseout=function() {
+					jQ('#chatH2').css("text-shadow", "0 0 0px black");
+				};
+
+				chatH2.onclick=function() {
+					jQ('#chatWrapper').slideToggle('slow');				
+				};
+
+				settingsTab.appendChild(chatH2);
+
+				// Wrapper starts hidden
+				var chatTabTableWrapper = document.createElement("DIV");
+				chatTabTableWrapper.style.display="none";
+				chatTabTableWrapper.id="chatWrapper";
+				var chatTabTable = document.createElement("TABLE");
+				chatTabTable.id = "chatOpTable";
+				chatTabTableWrapper.appendChild(chatTabTable);
+				settingsTab.appendChild(chatTabTableWrapper);
+
+				//Themes h2
+				var themeH2 = document.createElement("H2");
+				themeH2.id = "themeH2";
+				themeH2.textContent = tran.t("themeH2Text");
+				themeH2.onmouseover=function() {
+					jQ('#themeH2').css("text-shadow", "0 0 24px white");
+				};
+
+				themeH2.onmouseout=function() {
+					jQ('#themeH2').css("text-shadow", "0 0 0px black");
+				};
+
+				themeH2.onclick=function() {
+					jQ('#themeWrapper').slideToggle('slow');				
+				};
+
+				settingsTab.appendChild(themeH2);
+
+				// Wrapper starts hidden
+				var themeTabTableWrapper = document.createElement("DIV");
+				themeTabTableWrapper.style.display="none";
+				themeTabTableWrapper.id="themeWrapper";
+				var themeTabTable = document.createElement("TABLE");
+				themeTabTable.id = "themeOpTable";
+				themeTabTableWrapper.appendChild(themeTabTable);
+				settingsTab.appendChild(themeTabTableWrapper);
+
+				//Easter h2
+				var easterH2 = document.createElement("H2");
+				easterH2.id = "easterH2";
+				easterH2.textContent = tran.t("easterText");
+				easterH2.onmouseover=function() {
+					jQ('#easterH2').css("text-shadow", "0 0 24px white");
+				};
+
+				easterH2.onmouseout=function() {
+					jQ('#easterH2').css("text-shadow", "0 0 0px black");
+				};
+
+				easterH2.onclick=function() {
+					jQ('#easterWrapper').slideToggle('slow');				
+				};
+
+				settingsTab.appendChild(easterH2);
+
+				// Wrapper starts hidden
+				var easterTabTableWrapper = document.createElement("DIV");
+				easterTabTableWrapper.style.display="none";
+				easterTabTableWrapper.id="easterWrapper";
+				var easterTabTable = document.createElement("TABLE");
+				easterTabTable.id = "easterTable";
+				easterTabTableWrapper.appendChild(easterTabTable);
+				settingsTab.appendChild(easterTabTableWrapper);
+
+
+
+
 				// Might as well have the current players in here
 				var playerListH2 = document.createElement("H2");
 				playerListH2.id ="PlayerListH2";
 				playerListH2.textContent = tran.t("playerListText");
 				playerListH2.onclick = function() {
-					jQ('#PlayerList').slideToggle('slow');				
+					jQ('#PlayerListWrapper').slideToggle('slow');				
 				};
 
 
@@ -2748,12 +3103,37 @@ var source = function() {
 				};
 
 				settingsTab.appendChild(playerListH2);
+				var playerListWrapper = document.createElement("DIV");
+				playerListWrapper.id = "PlayerListWrapper";
+				playerListWrapper.style.display = "none";
+				playerListWrapper.style.marginLeft = "8px";
+				settingsTab.appendChild(playerListWrapper)
 				
 				var playerListDiv = document.createElement("DIV");
 				playerListDiv.id = "PlayerList";
-				playerListDiv.style.display="none";
-				playerListDiv.style.marginLeft = "8px";
-				settingsTab.appendChild(playerListDiv);
+				playerListWrapper.appendChild(playerListDiv);
+				
+				var ignoringListH3 = document.createElement("H3");
+				ignoringListH3.id = "IgnoringListH3";
+				ignoringListH3.textContent = tran.t("ignoringText");
+				ignoringListH3.onclick = function () {
+					jQ('#IgnoringListDiv').slideToggle('slow');
+				};
+				ignoringListH3.onmouseover=function() {
+					jQ('#IgnoringListH3').css("text-shadow", "0 0 24px white");
+				};
+
+				ignoringListH3.onmouseout=function() {
+					jQ('#IgnoringListH3').css("text-shadow", "0 0 0px black");
+				};
+				playerListWrapper.appendChild(ignoringListH3);
+				
+				var ignoringListDiv = document.createElement("DIV");
+				ignoringListDiv.id = "IgnoringListDiv";
+				ignoringListDiv.style.display = "none";
+				ignoringListDiv.marginLeft = "8px";
+				playerListWrapper.appendChild(ignoringListDiv);
+				ignoringListDiv.textContent = tran.t("ignoringEmpty");
 				
 				// A little attribution table
 				var creditsH2 = document.createElement("H2");
@@ -2800,7 +3180,7 @@ var source = function() {
 						compact: tran.t("containerSizeOptions.compact"),
 						fitToPlayers: tran.t("containerSizeOptions.fitToPlayers")
 					},
-					"containerSelect", 
+					"containerSelect", "overlaySettingsTable",
 					function () {
 						//Get the infoTableDiv element and the selector created with the id 'containerSelect'
 						var infoTableDiv = document.getElementsByClassName("infoTableDiv")[0];
@@ -2834,7 +3214,7 @@ var source = function() {
 						on: tran.t("twitchEmotesOptions.on"),
 						off: tran.t("twitchEmotesOptions.off")
 					},
-					"twitchEmoteSelect",
+					"twitchEmoteSelect", "chatOpTable",
 					function () {
 						var teSelect = document.getElementById("twitchEmoteSelect");
 						
@@ -2857,7 +3237,7 @@ var source = function() {
 						off: tran.t("textAdventureOptions.off"),
 						on: tran.t("textAdventureOptions.on")
 					},
-					"adventureSetting",
+					"adventureSetting", "easterTable",
 					function() {
 						var sTabSelect = document.getElementById("adventureSetting");
 						if(sTabSelect.value === "on") {
@@ -2870,6 +3250,26 @@ var source = function() {
 					}
 				);
 
+				//Score setting
+				generateSettingsElement(
+					tran.t("scoreName"),
+					{
+						off: tran.t("scoreOption.off"),
+						on: tran.t("scoreOption.on"),
+					},
+					"scoreSetting", "easterTable",
+					function() {
+						var sTabSelect = document.getElementById("scoreSetting");
+						if(sTabSelect.value === "on") {
+							bpOverlay.scoreMode=true;
+						} else {
+							bpOverlay.scoreMode=false;
+							var meowswitch = document.getElementById("LeaderboardTab");
+							meowswitch.innerHTML=" ";
+						}
+					}
+				);
+				//Hard modes
 				generateSettingsElement(
 					tran.t("hardModesName"),
 					{
@@ -2879,7 +3279,7 @@ var source = function() {
 						az: tran.t("hardModesOptions.az"),
 						xz: tran.t("hardModesOptions.xz")
 					},
-					"hardModes",
+					"hardModes", "easterTable",
 					function() {
 						var sTabSelect = document.getElementById("hardModes");
 						if(sTabSelect.value === "rev") {
@@ -2929,6 +3329,7 @@ var source = function() {
 					}
 				);							
 				
+				//Theme element
 				generateSettingsElement(
 					tran.t("themeName"),
 					{
@@ -2936,7 +3337,7 @@ var source = function() {
 						"https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/themes/xmas/xmas.json": tran.t("themeOptions.xmas"),
 						custom: tran.t("themeOptions.custom"),
 					},
-					"themeSelect",
+					"themeSelect", "themeOpTable",
 					function () {
 						var themeSelect = document.getElementById("themeSelect");
 						if (themeSelect.value === "none") {
@@ -2959,7 +3360,7 @@ var source = function() {
 				// It's wrapped in a anonymous function because
 				// I can't be bothered to make sure the variable names don't conflict
 				(function () {
-					var sTabTable = document.getElementById("overlaySettingsTable");
+					var sTabTable = document.getElementById("themeOpTable");
 					var sTabTr = document.createElement("TR");
 					sTabTr.id = "customThemeRow";
 					sTabTr.style.display = "none";
@@ -2974,6 +3375,7 @@ var source = function() {
 					sTabOptionsTd.appendChild(sTabInput);
 				})();
 				
+				//Particle settings
 				generateSettingsElement(
 					tran.t("particlesName"),
 					{
@@ -2981,7 +3383,7 @@ var source = function() {
 						low: tran.t("particlesOptions.low"),
 						off: tran.t("particlesOptions.off")
 					},
-					"particleSelect",
+					"particleSelect", "themeOpTable",
 					function () {
 						var sTabSelect = document.getElementById("particleSelect");
 						if(sTabSelect.value === "high") {
@@ -2994,13 +3396,14 @@ var source = function() {
 					}
 				);
 				
+				//Notifies
 				generateSettingsElement(
 					tran.t("notificationsName"),
 					{
 						on: tran.t("notificationOptions.on"),
 						off: tran.t("notificationOptions.off"),
 					},
-					"notificationsSelect",
+					"notificationsSelect", "notificationsTable",
 					function () {
 						var sTabSelect = document.getElementById("notificationsSelect");
 						if (sTabSelect.value == "on") {
@@ -3014,7 +3417,7 @@ var source = function() {
 				
 				// This one's a slider!
 				(function () {
-					var sTabTable = document.getElementById("overlaySettingsTable");
+					var sTabTable = document.getElementById("notificationsTable");
 					var sTabTr = document.createElement("TR");
 					sTabTable.appendChild(sTabTr);
 					var sTabTd = document.createElement("TD");
@@ -3038,7 +3441,7 @@ var source = function() {
 				
 				// And another, because this one's an input
 				(function () {
-					var sTabTable = document.getElementById("overlaySettingsTable");
+					var sTabTable = document.getElementById("notificationsTable");
 					var sTabTr = document.createElement("TR");
 					sTabTr.id = "notificationSettingsRow";
 					sTabTable.appendChild(sTabTr);
@@ -3064,13 +3467,14 @@ var source = function() {
 					sTabOptionsTd.appendChild(sTabInput);
 				})();
 				
+				//Notification meow
 				generateSettingsElement(
 					tran.t("endGameNotification"),
 					{
 						on: tran.t("endGameNotificationOptions.on"),
 						off: tran.t("endGameNotificationOptions.off"),
 					},
-					"endGameNotificationSelect",
+					"endGameNotificationSelect", "notificationsTable",
 					function () {
 						var sTabSelect = document.getElementById("endGameNotificationSelect");
 						if (sTabSelect.value == "on") {
@@ -3088,13 +3492,14 @@ var source = function() {
 				alphaColumnStyle.textContent = ".alphaColumn{display:none;}";
 				document.head.appendChild(alphaColumnStyle);
 				
+				//Alpha display
 				generateSettingsElement(
 					tran.t("alphaRouletteName"),
 					{
 						on: tran.t("alphaRouletteOptions.on"),
 						off: tran.t("alphaRouletteOptions.off"),
 					},
-					"alphaRouletteSelect",
+					"alphaRouletteSelect", "overlaySettingsTable",
 					function () {
 						var sTabSelect = document.getElementById("alphaRouletteSelect");
 						if (sTabSelect.value == "on") {
@@ -3105,6 +3510,96 @@ var source = function() {
 						}
 					}
 				);
+				
+				// Only add this if speech synthesis is supported by the browser
+				if (window.speechSynthesis) {
+					var speechListener = function (e) {
+						var iterator=0;
+						for(i=200; i<e.text.length; i+= 200) {
+							for(j=i; j >= iterator; j -= 1) {	
+								if(e.text[j] === " ") {
+									barkmeow = new SpeechSynthesisUtterance(e.text.substring(iterator, j));
+									barkmeow.voice = speechSynthesis.getVoices().filter(function(voice) { return voice.name == bpOverlay.speechName; })[0];
+									barkmeow.onstart = function() { startPing() };
+									barkmeow.onend = function() { pingSuccess(); };
+									speechSynthesis.speak(barkmeow);
+									iterator=j;
+									break;
+								} else if(j == iterator) {
+									barkmeow = new SpeechSynthesisUtterance(e.text.substring(iterator, i));
+									barkmeow.voice = speechSynthesis.getVoices().filter(function(voice) { return voice.name == bpOverlay.speechName; })[0];
+									barkmeow.onstart = function() { startPing() };
+									barkmeow.onend = function() { pingSuccess(); };
+									iterator=i;
+								}					
+							}	
+						}		
+						barkmeow = new SpeechSynthesisUtterance(e.text.substring(iterator, e.text.length));
+						barkmeow.voice = speechSynthesis.getVoices().filter(function(voice) { return voice.name == bpOverlay.speechName; })[0];
+						barkmeow.onstart = function() { startPing() };
+						barkmeow.onend = function() { pingSuccess(); };speechSynthesis.speak(barkmeow);
+						console.log(barkmeow);	//fix for onend not being called at the very end. See stackoverflow. Weird
+					}
+					
+					//oh boy. Here we go with the speech element
+					generateSettingsElement(
+						tran.t("speechName"),
+						{
+							off: tran.t("speechOptions.off"),
+							on: tran.t("speechOptions.on"),
+						},
+						"speechSelect", "chatOpTable",
+						function() {
+							var sTabSelect = document.getElementById("speechSelect");
+							if(sTabSelect.value == "on") {
+								//The name of the ping function that we will reference
+								var pingu;
+
+								//Starts the ping. If a pingSuccess isn't received within 13 seconds (approx time of 31 w's which break this) after starting a chunk,
+								//then speechSynthesis.cancel() is called. Dirty workaround.
+								//it throws out a lot of text if an error occurs, but at least it restarts this whole mess for you
+								var startPing = function() {
+									pingu = setTimeout(function(){ speechSynthesis.cancel(); }, 13000);
+								};
+
+								//calling this function signifies that a speecherror has not occurred.
+								var pingSuccess = function() {
+									clearTimeout(pingu);
+								};
+
+								//the speecher barkmeow
+								channel.socket.on("chatMessage", speechListener);
+							} else {
+								channel.socket.removeListener("chatMessage", speechListener);
+							}
+						}
+					);
+
+					generateSettingsElement(
+						tran.t("voiceSelect"),
+						{
+							us: tran.t("voiceOptions.us"),
+							ukMale: tran.t("voiceOptions.ukMale"),
+							ukFem: tran.t("voiceOptions.ukFem"),
+							fran: tran.t("voiceOptions.fran"),
+						},
+						"voiceSelect", "chatOpTable",
+						function () {
+							var sTabSelect = document.getElementById("voiceSelect");
+							if (sTabSelect.value == "us") {
+								bpOverlay.speechName = "Google US English";
+							}
+							else if(sTabSelect.value == "ukMale") {
+								bpOverlay.speechName = "Google UK English Male";
+							} else if(sTabSelect.value == "ukFem") {
+								bpOverlay.speechName = "Google UK English Female";
+							} else {
+								bpOverlay.speechName = "Google Français";
+							}
+						}
+					
+					);
+				}
 				
 				document.getElementById("alphaRouletteSelect").value = "off";
 				
@@ -3334,6 +3829,9 @@ var validateThemeObj = function (themeObj) {
 	}
 	
 	var validateTextStyle = function (textStyle) {
+		if (textStyle === undefined) {
+			return true;
+		}
 		if (typeof(textStyle) === "object") {
 			if (typeof(textStyle.color) !== "undefined") {
 				if (typeof(textStyle.color) !== "string") {
