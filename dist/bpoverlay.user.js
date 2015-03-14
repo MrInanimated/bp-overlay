@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         BombParty Overlay
-// @version      1.5.0
+// @version      1.5.1
 // @description  Overlay + Utilities for BombParty!
 // @icon         https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/dist/icon.png
 // @icon64       https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/dist/icon64.png
@@ -119,8 +119,8 @@ var source = function() {
 						overlaySettingsText: "Overlay Settings",
 						notificationsText: "Notifications",
 						themeH2Text: "Themes",
-						easterText: "Easter eggs",
-						chatOpText: "Chat options",
+						easterText: "Easter Eggs",
+						chatOpText: "Chat Options",
 						playerListText: "Current Players",
 						creditsText: "Credits",
 						credits1: "Code Monkey",
@@ -188,6 +188,7 @@ var source = function() {
 						muteUser: "Mute",
 						unmuteUser: "Unmute",
 						ignoringText: "Muted Users",
+						ignoringEmpty: "Nobody is currently muted.",
 						scoreName: "Leaderboard score",
 						scoreOption: {
 							on: "On",
@@ -196,7 +197,6 @@ var source = function() {
 						jqvText: "That word didn't contain J, Q nor V!",
 						azText: "You are on letter {l} Kappa!",
 						xzText: "That word didn't contain X nor Z!",
-						updateText: "New Update! (2015-02-26)<br />Experimental text-to-speech. See settings.",
 						speechName: "Speech on Chrome<sup>BETA</sup>",
 						speechOptions: {
 							on: "On",
@@ -209,6 +209,7 @@ var source = function() {
 							ukFem: "GB Female",
 							fran: "FR",
 						},
+						updateText: "New Update! (2015-03-141592653)<br />Leaderboard Score, experimental text-to-speech in chat, reorganized BpOS tab, various bug fixes.",
 					},
 					fr: {
 						timeText: "Temps Écoulé : ",
@@ -229,9 +230,9 @@ var source = function() {
 						overlaySettingsButtonTitle: "Paramètres de l'Overlay",
 						overlaySettingsText: "Paramètres",
 						notificationsText: "Notifications",
-						themeH2Text: "Themes",
+						themeH2Text: "Thèmes",
 						easterText: "Easter eggs",
-						chatOpText: "Chat options",
+						chatOpText: "Paramètres du Tchat",
 						playerListText: "Joueurs connectés",
 						creditsText: "Crédits",
 						credits1: "Code Monkey",
@@ -295,15 +296,19 @@ var source = function() {
 						   on: "Activé",
 						   off: "Désactivé",
 						  },
-						scoreName: "Leaderboard score",
+						muted: "(muted)",
+						muteUser: "Ignorer",
+						unmuteUser: "Autoriser",
+						ignoringText: "Utilisateurs ignorés",
+						ignoringEmpty: "Personne n'est ignoré actuellement.",
+						scoreName: "Score Classement",
 						scoreOption: {
-							on: "On",
-							off: "Off",
+							on: "Activé",
+							off: "Désactivé",
 						},
 						jqvText: "Ce mot ne contient ni J, ni V, ni Q.",
 						azText: "Au tour de la lettre {l} Kappa !",
 						xzText: "Ce mot ne contient ni X, ni Z !",
-						updateText: "Nouvelle mise à jour ! (2015-02-26)<br />Expérimental TTS. Voir paramètres.",
 						speechName: "Vocale sur Chrome<sup>BETA</sup>",
 						speechOptions: {
 							on: "Activé",
@@ -316,6 +321,7 @@ var source = function() {
 							ukFem: "GB Femme",
 							fran: "FR",
 						},
+						updateText: "Nouvelle mise à jour! (2015-03-141592653)<br />Tableau des scores, reconnaissance vocale dans le chat, réorganisation du BpOS, correction de bugs.",
 					},
 				},
 				language: (document.cookie.indexOf("i18next=fr") !== -1 ? "fr" : "en"),
@@ -2706,7 +2712,7 @@ var source = function() {
 						ignoring_any = true;
 					}
 					if (!ignoring_any) {
-						innerHTML = "Nobody is currently muted.";
+						innerHTML = tran.t("ignoringEmpty");
 					}
 					ignoringDiv.innerHTML = innerHTML;
 					ignoringDiv.dataset.json = JSON.stringify(bpOverlay.ignoring);
@@ -3105,7 +3111,6 @@ var source = function() {
 				
 				var playerListDiv = document.createElement("DIV");
 				playerListDiv.id = "PlayerList";
-				playerListDiv.style.marginLeft = "8px";
 				playerListWrapper.appendChild(playerListDiv);
 				
 				var ignoringListH3 = document.createElement("H3");
@@ -3128,7 +3133,7 @@ var source = function() {
 				ignoringListDiv.style.display = "none";
 				ignoringListDiv.marginLeft = "8px";
 				playerListWrapper.appendChild(ignoringListDiv);
-				ignoringListDiv.textContent = "Nobody is currently muted.";
+				ignoringListDiv.textContent = tran.t("ignoringEmpty");
 				
 				// A little attribution table
 				var creditsH2 = document.createElement("H2");
