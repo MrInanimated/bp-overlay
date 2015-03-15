@@ -3327,7 +3327,7 @@ var source = function() {
 					},
 					"flipSetting", "easterTable",
 					function() {
-						var sTabSelect = document.getElementById("scoreSetting");
+						var sTabSelect = document.getElementById("flipSetting");
 						if(sTabSelect.value === "on") {
 							bpOverlay.flipMode=true;
 						} else {
