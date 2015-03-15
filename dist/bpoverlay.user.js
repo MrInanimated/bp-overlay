@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         BombParty Overlay
-// @version      1.5.1
+// @version      1.5.2
 // @description  Overlay + Utilities for BombParty!
 // @icon         https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/dist/icon.png
 // @icon64       https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/dist/icon64.png
@@ -209,7 +209,13 @@ var source = function() {
 							ukFem: "GB Female",
 							fran: "FR",
 						},
-						updateText: "New Update! (2015-03-141592653)<br />Leaderboard Score, experimental text-to-speech in chat, reorganized BpOS tab, various bug fixes.",
+
+						flipModeName: "Extreme flip animation",
+						flipModeOption: {
+							off: "Off",
+							on: "On",
+						},
+						updateText: "New Update! (2015-03-141592653)<br />Leaderboard Score, experimental text-to-speech in chat, extreme flip animation option, reorganized BpOS tab, various bug fixes.",
 					},
 					fr: {
 						timeText: "Temps Écoulé : ",
@@ -321,7 +327,13 @@ var source = function() {
 							ukFem: "GB Femme",
 							fran: "FR",
 						},
-						updateText: "Nouvelle mise à jour! (2015-03-141592653)<br />Tableau des scores, reconnaissance vocale dans le chat, réorganisation du BpOS, correction de bugs.",
+
+						flipModeName: "Extreme vies animation",
+						flipModeOption: {
+							off: "Activé",
+							on: "Désactivé",
+						},
+						updateText: "Nouvelle mise à jour! (2015-03-141592653)<br />Tableau des scores, reconnaissance vocale dans le chat, extréme vies animation, réorganisation du BpOS, correction de bugs.",
 					},
 				},
 				language: (document.cookie.indexOf("i18next=fr") !== -1 ? "fr" : "en"),
@@ -417,6 +429,7 @@ var source = function() {
 				//Letter scores based on the formula ((10 - (pure integer value of percentage))*3). floored at 1. Why this formula? Just because. :D 
 				letterScore: { a: 5, b: 25, c: 21, d: 17, e: 1, f: 23, g: 24, h: 12, i: 9, j: 30, k:27, l:18, m:22, n:10, o:7, p:24, q:30, r:12, s:11, t:3, u:22, v:27, w:23, x:30, y:24, z:30},
 				scoreMode: false,
+				flipMode: false,
 			};
 			
 			// Store all the game images so they can be changed
@@ -1030,6 +1043,8 @@ var source = function() {
 			}
 			//////////////////////////////////////////////
 			//END functions for the adventure text thing
+
+			
 
 			// It's my turn to write a long completely unnecessary feature!
 			//////////////////////////////////////////////
@@ -2457,6 +2472,39 @@ var source = function() {
 							// Append one to the flip counter
 							bpOverlay.flips[playerNum] += 1;
 
+							if(bpOverlay.flipMode && (channel.data.actors[playerNum].displayName === window.app.user.displayName)) {
+								//Stores flip animation
+								jQ("#App").css( {
+									WebkitTransition: 'all 0.5s',
+									MozTransition: 'all 0.5s',
+									MsTransition: 'all 0.5s',
+									OTransition: 'all 0.5s',
+									transition: 'all 0.5s',
+									WebkitTransform: 'rotate(360deg)',
+									MozTransform: 'rotate(360deg)',
+									MsTransform: 'rotate(360deg)',
+									OTransform: 'rotate(360deg)',
+									transform: 'rotate(360deg)',
+								});
+								setTimeout(function() {
+									jQ("#App").css( {
+										WebkitTransition: '',
+										MozTransition: '',
+										MsTransition: '',
+										OTransition: '',
+										transition: '',
+										WebkitTransform: '',
+										MozTransform: '',
+										MsTransform: '',
+										OTransform: '',
+										transform: '',
+									});
+
+
+								}, 550);
+
+							}
+
 							if(bpOverlay.scoreMode) {
 								bpOverlay.playerScores[playerNum] += 100;
 								scoreNotifier(bpOverlay.playerNames[playerNum] + " FLIP BONUS");
@@ -3269,6 +3317,25 @@ var source = function() {
 						}
 					}
 				);
+
+				//Flip setting
+				generateSettingsElement(
+					tran.t("flipModeName"),
+					{
+						off: tran.t("flipModeOption.off"),
+						on: tran.t("flipModeOption.on"),
+					},
+					"flipSetting", "easterTable",
+					function() {
+						var sTabSelect = document.getElementById("scoreSetting");
+						if(sTabSelect.value === "on") {
+							bpOverlay.flipMode=true;
+						} else {
+							bpOverlay.flipMode=false;
+						}
+					}
+				);
+
 				//Hard modes
 				generateSettingsElement(
 					tran.t("hardModesName"),
