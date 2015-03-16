@@ -7,8 +7,8 @@
 // @downloadURL  https://github.com/MrInanimated/bp-overlay/raw/master/dist/bpoverlay.user.js
 // @author       MrInanimated and Skandalabrandur
 // @match        http://bombparty.sparklinlabs.com/play/*
-// @resource     twitch_global http://twitchemotes.com/global.json
-// @resource     twitch_subscriber http://twitchemotes.com/subscriber.json
+// @resource     twitch_global http://twitchemotes.com/api_cache/v2/global.json
+// @resource     twitch_subscriber http://twitchemotes.com/api_cache/v2/subscriber.json
 // @resource     autoScrollOn https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/dist/chatdown.png
 // @resource     autoScrollOff https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/dist/chatdownoff.png
 // @resource     autoFocusOn https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/dist/focusOn.png
@@ -44,16 +44,31 @@ function main() {
 // load jQuery and execute the main function
 addJQuery(main);
 
+// JSON Parser, by Douglas Crockford
+// This is necessary because in this environment I don't have access to the JSON object
+var json_parse=function(){"use strict";var e,t,n={'"':'"',"\\":"\\","/":"/",b:"\b",f:"\f",n:"\n",r:"\r",t:"	"},r,i=function(t){throw{name:"SyntaxError",message:t,at:e,text:r}},s=function(n){if(n&&n!==t){i("Expected '"+n+"' instead of '"+t+"'")}t=r.charAt(e);e+=1;return t},o=function(){var e,n="";if(t==="-"){n="-";s("-")}while(t>="0"&&t<="9"){n+=t;s()}if(t==="."){n+=".";while(s()&&t>="0"&&t<="9"){n+=t}}if(t==="e"||t==="E"){n+=t;s();if(t==="-"||t==="+"){n+=t;s()}while(t>="0"&&t<="9"){n+=t;s()}}e=+n;if(!isFinite(e)){i("Bad number")}else{return e}},u=function(){var e,r,o="",u;if(t==='"'){while(s()){if(t==='"'){s();return o}if(t==="\\"){s();if(t==="u"){u=0;for(r=0;r<4;r+=1){e=parseInt(s(),16);if(!isFinite(e)){break}u=u*16+e}o+=String.fromCharCode(u)}else if(typeof n[t]==="string"){o+=n[t]}else{break}}else{o+=t}}}i("Bad string")},a=function(){while(t&&t<=" "){s()}},f=function(){switch(t){case"t":s("t");s("r");s("u");s("e");return true;case"f":s("f");s("a");s("l");s("s");s("e");return false;case"n":s("n");s("u");s("l");s("l");return null}i("Unexpected '"+t+"'")},l,c=function(){var e=[];if(t==="["){s("[");a();if(t==="]"){s("]");return e}while(t){e.push(l());a();if(t==="]"){s("]");return e}s(",");a()}}i("Bad array")},h=function(){var e,n={};if(t==="{"){s("{");a();if(t==="}"){s("}");return n}while(t){e=u();a();s(":");if(Object.hasOwnProperty.call(n,e)){i('Duplicate key "'+e+'"')}n[e]=l();a();if(t==="}"){s("}");return n}s(",");a()}}i("Bad object")};l=function(){a();switch(t){case"{":return h();case"[":return c();case'"':return u();case"-":return o();default:return t>="0"&&t<="9"?o():f()}};return function(n,s){var o;r=n;e=0;t=" ";o=l();a();if(t){i("Syntax error")}return typeof s==="function"?function u(e,t){var n,r,i=e[t];if(i&&typeof i==="object"){for(n in i){if(Object.prototype.hasOwnProperty.call(i,n)){r=u(i,n);if(r!==undefined){i[n]=r}else{delete i[n]}}}}return s.call(e,t,i)}({"":o},""):o}}()
+
 // Grab the twitch emotes
 var tg = GM_getResourceText("twitch_global");
 var ts = GM_getResourceText("twitch_subscriber");
 
+try {
+	json_parse(tg);
+	json_parse(ts);
+	var te = document.createElement('script');
+	te.setAttribute("type", "application/javascript");
+	te.textContent = '\
+	var twitch_global = ' + tg + ';\
+	var twitch_subscriber = ' + ts + ';'
+	document.body.appendChild(te);
+	document.body.removeChild(te);
+}
+finally {
+}
+
 var te = document.createElement('script');
 te.setAttribute("type", "application/javascript");
-te.textContent = '\
-var twitch_global = ' + tg + ';\
-var twitch_subscriber = ' + ts + ';\
-var bpImgUrls = {\
+te.textContent = 'var bpImgUrls = {\
 	autoScrollOn : "' + GM_getResourceURL("autoScrollOn") + '",\
 	autoScrollOff : "' + GM_getResourceURL("autoScrollOff") + '",\
 	autoFocusOn : "' + GM_getResourceURL("autoFocusOn") + '",\
@@ -1996,43 +2011,67 @@ var source = function() {
 				}
 			}
 
+			// Do a bit of processing on the twitch emotes
+			var twitchEmotes = {};
+			var twitchEmotesSpecialCases = {}; // These are the emotes that contain non-alphanumeric characters in them. *grumble grumble grumble*
+			if (twitch_global && twitch_subscriber) {
+				var globalTemplate = twitch_global.template;
+				var subscriberTemplate = twitch_subscriber.template;
+
+				for (var i in twitch_global.emotes) {
+					if (i.split(/\b/g).length !== 1) {
+						twitchEmotesSpecialCases[i] = {image_id: twitch_global.emotes[i].image_id, global: true};
+					}
+					else {
+						twitchEmotes[i] = {image_id: twitch_global.emotes[i].image_id, global: true};
+					}
+				}
+				for (var i in twitch_subscriber.channels) {
+					for (var j = 0; j < twitch_subscriber.channels[i].emotes.length; j++) {
+						var code = twitch_subscriber.channels[i].emotes[j].code;
+						if (code.split(/\b/g).length !== 1) {
+							twitchEmotesSpecialCases[code] = {image_id: twitch_subscriber.channels[i].emotes[j].image_id, channel: i};
+						}
+						else {
+							twitchEmotes[code] = {image_id: twitch_subscriber.channels[i].emotes[j].image_id, channel: i};
+						}
+					}
+				}
+			}
+			else {
+				bpOverlay.emoteError = true;
+			}
+			
 			// It now makes more sense to have the twitch emotes in a separate function
 			var twitchify = function (message) {
-				if (bpOverlay.twitchOn) {
-					if (window.hasOwnProperty("twitch_global")) {
-						for (i in twitch_global) {
-							message = message.replace(new RegExp("\\b" + i + "\\b", "g"), "<img src=\"http:" + twitch_global[i].url + "\" title=\"" + i + "\" style=\"margin-bottom:-6px\"><\/img>");
+				if (bpOverlay.twitchOn && !bpOverlay.emoteError) {
+					var replacements = {};
+					var replacementCounter = 0;
+				
+					// Check for special cases first
+					for (var i in twitchEmotesSpecialCases) {
+						var src = (twitchEmotesSpecialCases[i].global ? globalTemplate : subscriberTemplate).small.replace("{image_id}", twitchEmotesSpecialCases[i].image_id);
+						message = message.replace(new RegExp("(^|\\b|\\W)" + i + "($|\\b|\\W)", "g"), "&" + replacementCounter + "&");
+						replacements["&" + replacementCounter + "&"] = "<img src=\"" + src + "\" title=\"" + (twitchEmotesSpecialCases[i].global ? "": twitchEmotesSpecialCases[i].channel + " &gt; ") + i + "\" \/>";
+						replacementCounter++;
+					}
+					
+					// Then look for the rest and replace
+					message = message.split(/\b/g);
+					for (var i = 0; i < message.length; i++) {
+						var code = message[i];
+						if (twitchEmotes[code]) {
+							message[i] = "&" + replacementCounter + "&";
+							var src = (twitchEmotes[code].global ? globalTemplate : subscriberTemplate).small.replace("{image_id}", twitchEmotes[code].image_id);
+							replacements["&" + replacementCounter + "&"] = "<img src=\"" + src + "\" title=\"" + (twitchEmotes[code].global ? "": twitchEmotes[code].channel + " &gt; ") + code + "\" \/>";
+							replacementCounter++;
 						}
 					}
 					
-					if (window.hasOwnProperty("twitch_subscriber")) {
-						// Match subscriber emote patterns
-						var matches = [];
-						var found;
-						var reg = /\b\w+:\w+\b/g
-						while (found = reg.exec(message)) {
-							matches.push(found[0]);
-						}
-						
-						// Check if any of the patterns we've found are actual emotes
-						toReplace = {};
-						for (i = 0; i < matches.length; i++) {
-							var split = matches[i].split(":");
-							var s = split[0].toLowerCase();
-							var e = split[1];
-							if (!toReplace[matches[i]]) {
-								if (twitch_subscriber[s]) {
-									if (twitch_subscriber[s].emotes[e]) {
-										toReplace[s+":"+e] = twitch_subscriber[s].emotes[e];
-									}
-								}
-							}
-						}
-						
-						// Finally, do any replacements
-						for (i in toReplace) {
-							message = message.replace(new RegExp(i, "g"), "<img src=\"http:" + toReplace[i] + "\" title=\"" + i + "\" style=\"margin-bottom:-6px\"><\/img>");
-						}
+					message = message.join("");
+					
+					for (var i in replacements) {
+						message = message.replace(i, replacements[i]);
 					}
 					
 				}
@@ -3618,6 +3657,10 @@ var source = function() {
 
 			// "Update Text"
 			channel.appendToChat("Info", tran.t("updateText"));
+			
+			if (bpOverlay.emoteError) {
+				channel.appendToChat("Info", "Error: Twitch emotes have not been loaded.");
+			}
 		}
 		main();
 	}
@@ -3887,11 +3930,6 @@ var validateThemeObj = function (themeObj) {
 	
 	return valid;
 };
-
-// JSON Parser, by Douglas Crockford
-// This is necessary because in this environment I don't have access to the JSON object
-var json_parse=function(){"use strict";var e,t,n={'"':'"',"\\":"\\","/":"/",b:"\b",f:"\f",n:"\n",r:"\r",t:"	"},r,i=function(t){throw{name:"SyntaxError",message:t,at:e,text:r}},s=function(n){if(n&&n!==t){i("Expected '"+n+"' instead of '"+t+"'")}t=r.charAt(e);e+=1;return t},o=function(){var e,n="";if(t==="-"){n="-";s("-")}while(t>="0"&&t<="9"){n+=t;s()}if(t==="."){n+=".";while(s()&&t>="0"&&t<="9"){n+=t}}if(t==="e"||t==="E"){n+=t;s();if(t==="-"||t==="+"){n+=t;s()}while(t>="0"&&t<="9"){n+=t;s()}}e=+n;if(!isFinite(e)){i("Bad number")}else{return e}},u=function(){var e,r,o="",u;if(t==='"'){while(s()){if(t==='"'){s();return o}if(t==="\\"){s();if(t==="u"){u=0;for(r=0;r<4;r+=1){e=parseInt(s(),16);if(!isFinite(e)){break}u=u*16+e}o+=String.fromCharCode(u)}else if(typeof n[t]==="string"){o+=n[t]}else{break}}else{o+=t}}}i("Bad string")},a=function(){while(t&&t<=" "){s()}},f=function(){switch(t){case"t":s("t");s("r");s("u");s("e");return true;case"f":s("f");s("a");s("l");s("s");s("e");return false;case"n":s("n");s("u");s("l");s("l");return null}i("Unexpected '"+t+"'")},l,c=function(){var e=[];if(t==="["){s("[");a();if(t==="]"){s("]");return e}while(t){e.push(l());a();if(t==="]"){s("]");return e}s(",");a()}}i("Bad array")},h=function(){var e,n={};if(t==="{"){s("{");a();if(t==="}"){s("}");return n}while(t){e=u();a();s(":");if(Object.hasOwnProperty.call(n,e)){i('Duplicate key "'+e+'"')}n[e]=l();a();if(t==="}"){s("}");return n}s(",");a()}}i("Bad object")};l=function(){a();switch(t){case"{":return h();case"[":return c();case'"':return u();case"-":return o();default:return t>="0"&&t<="9"?o():f()}};return function(n,s){var o;r=n;e=0;t=" ";o=l();a();if(t){i("Syntax error")}return typeof s==="function"?function u(e,t){var n,r,i=e[t];if(i&&typeof i==="object"){for(n in i){if(Object.prototype.hasOwnProperty.call(i,n)){r=u(i,n);if(r!==undefined){i[n]=r}else{delete i[n]}}}}return s.call(e,t,i)}({"":o},""):o}}()
-// I'm sorry for introducing more foreign code, but I've decided to stand strong against jQuery
 
 var loadAndApplyTheme = function (url) {
 	GM_xmlhttpRequest({
