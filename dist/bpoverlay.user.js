@@ -2040,7 +2040,7 @@ var source = function() {
 						if (twitchEmotes[code]) {
 							var src = (twitchEmotes[code].global ? globalTemplate : subscriberTemplate).small.replace("{image_id}", twitchEmotes[code].image_id);
 							var title = (twitchEmotes[code].channel ? twitchEmotes[code].channel + " &gt; " : "") + code;
-							return "<img src=\"" + src + "\" title=\"" + title + "\" style=\"vertical-align:-30%\"></img>";
+							return "<img src=\"" + src + "\" alt=\"" + match + "\" title=\"" + title + "\" style=\"vertical-align:-30%\"></img>";
 						}
 						else {
 							return match;
