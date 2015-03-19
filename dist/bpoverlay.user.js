@@ -2013,28 +2013,17 @@ var source = function() {
 
 			// Do a bit of processing on the twitch emotes
 			var twitchEmotes = {};
-			var twitchEmotesSpecialCases = {}; // These are the emotes that contain non-alphanumeric characters in them. *grumble grumble grumble*
 			if (twitch_global && twitch_subscriber) {
 				var globalTemplate = twitch_global.template;
 				var subscriberTemplate = twitch_subscriber.template;
 
 				for (var i in twitch_global.emotes) {
-					if (i.split(/\b/g).length !== 1) {
-						twitchEmotesSpecialCases[i] = {image_id: twitch_global.emotes[i].image_id, global: true};
-					}
-					else {
-						twitchEmotes[i] = {image_id: twitch_global.emotes[i].image_id, global: true};
-					}
+					twitchEmotes[i] = {image_id: twitch_global.emotes[i].image_id, global: true};
 				}
 				for (var i in twitch_subscriber.channels) {
 					for (var j = 0; j < twitch_subscriber.channels[i].emotes.length; j++) {
 						var code = twitch_subscriber.channels[i].emotes[j].code;
-						if (code.split(/\b/g).length !== 1) {
-							twitchEmotesSpecialCases[code] = {image_id: twitch_subscriber.channels[i].emotes[j].image_id, channel: i};
-						}
-						else {
-							twitchEmotes[code] = {image_id: twitch_subscriber.channels[i].emotes[j].image_id, channel: i};
-						}
+						twitchEmotes[code] = {image_id: twitch_subscriber.channels[i].emotes[j].image_id, channel: i};
 					}
 				}
 			}
@@ -2045,34 +2034,18 @@ var source = function() {
 			// It now makes more sense to have the twitch emotes in a separate function
 			var twitchify = function (message) {
 				if (bpOverlay.twitchOn && !bpOverlay.emoteError) {
-					var replacements = {};
-					var replacementCounter = 0;
 				
-					// Check for special cases first
-					for (var i in twitchEmotesSpecialCases) {
-						var src = (twitchEmotesSpecialCases[i].global ? globalTemplate : subscriberTemplate).small.replace("{image_id}", twitchEmotesSpecialCases[i].image_id);
-						message = message.replace(new RegExp("(^|\\b|\\W)" + i + "($|\\b|\\W)", "g"), "&" + replacementCounter + "&");
-						replacements["&" + replacementCounter + "&"] = "<img src=\"" + src + "\" title=\"" + (twitchEmotesSpecialCases[i].global ? "": twitchEmotesSpecialCases[i].channel + " &gt; ") + i + "\" \/>";
-						replacementCounter++;
-					}
-					
-					// Then look for the rest and replace
-					message = message.split(/\b/g);
-					for (var i = 0; i < message.length; i++) {
-						var code = message[i];
+					message = message.replace(/\[[^\[\]]*\]/g, function (match) {
+						var code = match.substring(1, match.length - 1);
 						if (twitchEmotes[code]) {
-							message[i] = "&" + replacementCounter + "&";
 							var src = (twitchEmotes[code].global ? globalTemplate : subscriberTemplate).small.replace("{image_id}", twitchEmotes[code].image_id);
-							replacements["&" + replacementCounter + "&"] = "<img src=\"" + src + "\" title=\"" + (twitchEmotes[code].global ? "": twitchEmotes[code].channel + " &gt; ") + code + "\" \/>";
-							replacementCounter++;
+							var title = (twitchEmotes[code].channel ? twitchEmotes[code].channel + " &gt; " : "") + code;
+							return "<img src=\"" + src + "\" title=\"" + title + "\" style=\"vertical-align:-30%\"></img>";
 						}
-					}
-					
-					message = message.join("");
-					
-					for (var i in replacements) {
-						message = message.replace(i, replacements[i]);
-					}
+						else {
+							return match;
+						}
+					});
 					
 				}
 				if (bpOverlay.markupOn) {
