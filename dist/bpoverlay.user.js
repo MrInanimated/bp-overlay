@@ -48,13 +48,14 @@ addJQuery(main);
 // This is necessary because in this environment I don't have access to the JSON object
 var json_parse=function(){"use strict";var e,t,n={'"':'"',"\\":"\\","/":"/",b:"\b",f:"\f",n:"\n",r:"\r",t:"	"},r,i=function(t){throw{name:"SyntaxError",message:t,at:e,text:r}},s=function(n){if(n&&n!==t){i("Expected '"+n+"' instead of '"+t+"'")}t=r.charAt(e);e+=1;return t},o=function(){var e,n="";if(t==="-"){n="-";s("-")}while(t>="0"&&t<="9"){n+=t;s()}if(t==="."){n+=".";while(s()&&t>="0"&&t<="9"){n+=t}}if(t==="e"||t==="E"){n+=t;s();if(t==="-"||t==="+"){n+=t;s()}while(t>="0"&&t<="9"){n+=t;s()}}e=+n;if(!isFinite(e)){i("Bad number")}else{return e}},u=function(){var e,r,o="",u;if(t==='"'){while(s()){if(t==='"'){s();return o}if(t==="\\"){s();if(t==="u"){u=0;for(r=0;r<4;r+=1){e=parseInt(s(),16);if(!isFinite(e)){break}u=u*16+e}o+=String.fromCharCode(u)}else if(typeof n[t]==="string"){o+=n[t]}else{break}}else{o+=t}}}i("Bad string")},a=function(){while(t&&t<=" "){s()}},f=function(){switch(t){case"t":s("t");s("r");s("u");s("e");return true;case"f":s("f");s("a");s("l");s("s");s("e");return false;case"n":s("n");s("u");s("l");s("l");return null}i("Unexpected '"+t+"'")},l,c=function(){var e=[];if(t==="["){s("[");a();if(t==="]"){s("]");return e}while(t){e.push(l());a();if(t==="]"){s("]");return e}s(",");a()}}i("Bad array")},h=function(){var e,n={};if(t==="{"){s("{");a();if(t==="}"){s("}");return n}while(t){e=u();a();s(":");if(Object.hasOwnProperty.call(n,e)){i('Duplicate key "'+e+'"')}n[e]=l();a();if(t==="}"){s("}");return n}s(",");a()}}i("Bad object")};l=function(){a();switch(t){case"{":return h();case"[":return c();case'"':return u();case"-":return o();default:return t>="0"&&t<="9"?o():f()}};return function(n,s){var o;r=n;e=0;t=" ";o=l();a();if(t){i("Syntax error")}return typeof s==="function"?function u(e,t){var n,r,i=e[t];if(i&&typeof i==="object"){for(n in i){if(Object.prototype.hasOwnProperty.call(i,n)){r=u(i,n);if(r!==undefined){i[n]=r}else{delete i[n]}}}}return s.call(e,t,i)}({"":o},""):o}}()
 
-// Grab the twitch emotes
-var tg = GM_getResourceText("twitch_global");
-var ts = GM_getResourceText("twitch_subscriber");
-
-try {
+try{
+	// Grab the twitch emotes
+	var tg = GM_getResourceText("twitch_global");
+	var ts = GM_getResourceText("twitch_subscriber");
 	json_parse(tg);
 	json_parse(ts);
+	tg = (tg === "") ? "undefined" : tg;
+	ts = (ts === "") ? "undefined" : ts;
 	var te = document.createElement('script');
 	te.setAttribute("type", "application/javascript");
 	te.textContent = '\
@@ -2013,12 +2014,13 @@ var source = function() {
 
 			// Do a bit of processing on the twitch emotes
 			var twitchEmotes = {};
+			var globalEmotes = {};
 			if (twitch_global && twitch_subscriber) {
 				var globalTemplate = twitch_global.template;
 				var subscriberTemplate = twitch_subscriber.template;
 
 				for (var i in twitch_global.emotes) {
-					twitchEmotes[i] = {image_id: twitch_global.emotes[i].image_id, global: true};
+					globalEmotes[i] = {image_id: twitch_global.emotes[i].image_id};
 				}
 				for (var i in twitch_subscriber.channels) {
 					for (var j = 0; j < twitch_subscriber.channels[i].emotes.length; j++) {
@@ -2034,6 +2036,11 @@ var source = function() {
 			// It now makes more sense to have the twitch emotes in a separate function
 			var twitchify = function (message) {
 				if (bpOverlay.twitchOn && !bpOverlay.emoteError) {
+				
+					for (var i in globalEmotes) {
+						var src = globalTemplate.small.replace("{image_id}", globalEmotes[i].image_id);
+						message = message.replace(new RegExp("\\b" + i + "\\b", "g"), "<img src=\"" + src + "\" alt=\"" + i + "\" title=\"" + i + "\" style=\"vertical-align:-30%\"></img>");
+					}
 				
 					message = message.replace(/\[[^\[\]]*\]/g, function (match) {
 						var code = match.substring(1, match.length - 1);
