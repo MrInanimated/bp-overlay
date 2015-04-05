@@ -37,7 +37,7 @@ These bits of text are (usually) used in the chat, and as such are static and on
 | `nuclearnode:chat.userJoined`                    | %{user} has joined.                                                                                 |
 | `nuclearnode:chat.userLeft`                      | %{user} has left.                                                                                   |
 | `nuclearnode:chat.userRoleSet`                   | %{user} is now %{role}.                                                                             |
-| `nuclearnode:userRoles.`                         | key 'nuclearnode:userRoles. (en)' returned an object instead of string. *(This error message shows up when somebody loses their role. Apparently Élisée didn't forsee the fact that people could be unmodded despite implementing it in the game. Anyway, you can assume this should say "no longer a mod" or somthing similar.)* |
+| `nuclearnode:userRoles.`                         | key 'nuclearnode:userRoles. (en)' returned an object instead of string. *(This error message shows up when somebody loses their role. Apparently Élisée didn't foresee the fact that people could be unmodded despite implementing it in the game. Anyway, you can assume this should say "no longer a mod" or somthing similar.)* |
 | `nuclearnode:userRoles.moderator`                | Moderator                                                                                           |
 | `nuclearnode:userRoles.host`                     | Host                                                                                                |
 | `nuclearnode:userRoles.hubAdministrator`         | Super administrator                                                                                 |
