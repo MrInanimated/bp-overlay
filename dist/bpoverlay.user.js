@@ -17,6 +17,8 @@
 // @resource     dragOn https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/dist/dragOn.png
 // @resource     hideDeadOn https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/dist/hideDeadOn.png
 // @resource     hideDeadOff https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/dist/hideDeadOff.png
+// @resource     contextMenuPlugin https://raw.githubusercontent.com/medialize/jQuery-contextMenu/master/src/jquery.contextMenu.js
+// @resource     contextMenuPluginCSS https://raw.githubusercontent.com/medialize/jQuery-contextMenu/master/src/jquery.contextMenu.css
 // @grant        GM_getResourceText
 // @grant        GM_getResourceURL
 // @grant        GM_getValue
@@ -33,6 +35,16 @@ function addJQuery(callback) {
     var script = document.createElement("script");
     script.textContent = "window.jQ=jQuery.noConflict(true);(" + callback.toString() + ")();";
     document.body.appendChild(script);
+	
+	// Load the context menu plugin stuff
+    // This is a pretty simple task to require a whole plugin for, but I want to futureproof for now
+	var script = document.createElement("script");
+	script.textContent = "(function(jQuery){" + GM_getResourceText("contextMenuPlugin") + ";})(jQ);";
+	document.body.appendChild(script);
+	
+	var css = document.createElement("style");
+	css.textContent = GM_getResourceText("contextMenuPluginCSS");
+	document.head.appendChild(css);
   }, false);
   document.body.appendChild(script);
 }
@@ -417,10 +429,15 @@ var source = function() {
 				//Letter scores based on the formula ((10 - (pure integer value of percentage))*3). floored at 1. Why this formula? Just because. :D 
 				letterScore: { a: 5, b: 25, c: 21, d: 17, e: 1, f: 23, g: 24, h: 12, i: 9, j: 30, k:27, l:18, m:22, n:10, o:7, p:24, q:30, r:12, s:11, t:3, u:22, v:27, w:23, x:30, y:24, z:30},
 				scoreMode: false,
+				
+				is_hidden: false,
 			};
 			
 			// Store all the game images so they can be changed
 			gameImages = {};
+			
+			window.addEventListener("blur", function () { bpOverlay.is_hidden = true; });
+			window.addEventListener("focus", function () { bpOverlay.is_hidden = false; });
 			
 			// So, um, the code here is pretty distributed, but I'll explain the "hack" I've found here
 			// Elisee has *kindly* wrapped up all the images he used in a closure
@@ -1823,66 +1840,6 @@ var source = function() {
 				}
 
 			}
-
-			// Make a context menu.
-			// Unfinished at the current time
-			var createContextMenu = function () {
-			
-				var contextMenu = document.createElement("DIV");
-				contextMenu.id = "bpContextMenu";
-				contextMenu.style.background = "#ffffff";
-				contextMenu.style.border = "1px solid #0000ff";
-				contextMenu.style.display = "none";
-				contextMenu.style.position = "absolute";
-				contextMenu.style.minWidth = "150px";
-				contextMenu.innerHTML = "\
-					<ul id=\"contextList\" style=\"list-style-type: none;\">\
-						<li><button id=\"contextBan\" class=\"contextMenuButton\">Ban </button></li>\
-						<li><button id=\"contextMod\" class=\"contextMenuButton\">Mod </button></li>\
-					</ul>\
-				";
-				
-				document.addEventListener("click", function (e) {
-					console.log(e.button);
-					if (e.button === 0 || e.target.className !== "User") {
-						contextMenu.style.display = "none";
-					}
-				});
-				
-				document.addEventListener("contextmenu", function (e) {
-					if (e.target.className === "User" && e.target.dataset.authId && channel.data.usersByAuthId[e.target.dataset.authId]) {
-						var contextMenuBan = document.getElementById("contextBan");
-						var contextMenuMod = document.getElementById("contextMod");
-						contextMenu.style.display = "";
-						
-						contextMenuBan.textContent = "Ban " + name;
-						contextMenuMod.textContent = "Mod " + name;
-						
-						var x = e.clientX;
-						var y = e.clientY;
-						var width = window.innerWidth - 3;
-						var height = window.innerHeight - 3;
-						if (x + contextMenu.clientWidth > width) {
-							x = width - contextMenu.clientWidth;
-						}
-						if (y + contextMenu.clientHeight > height) {
-							y = height - contextMenu.clientHeight;
-						}
-						
-						contextMenu.style.left = x + "px";
-						contextMenu.style.top = y + "px";
-						
-						var authId = e.target.dataset.authId;
-						var name = channel.data.usersByAuthId[authId].displayName;
-
-						contextMenuBan.dataset.authId = authId;
-						contextMenuMod.dataset.authId = authId;
-						e.preventDefault();
-					}
-				});
-				
-				document.body.appendChild(contextMenu);
-			};
 			
 			//Usage: 	generateSettingsElement(itemText, options, selectId, settingsFunction)
 			//string	'itemText' is the text to the right of the drop down options pane
@@ -2049,6 +2006,80 @@ var source = function() {
 			// We wrap the default game functions to force them to be called after our custom code.
 			var wrapGameFunctions = function() {
 
+				// Context Menus!
+				jQ(function () {
+					jQ.contextMenu({
+						selector: ".User",
+						items: {
+							"ban": {
+								name: i18n.t("nuclearnode:chat.ban"),
+								className: "contextMenuBanButton",
+								callback: function () {
+									var button = jQ(".contextMenuBanButton")[0];
+									if (button.dataset.state === "1") {
+										alert("Banning " + this[0].dataset.authId + " (not actually implemented yet because testing)");
+										return true;
+									}
+									else {
+										button.dataset.state = "1";
+										button.textContent = "Are you sure?";
+										return false;
+									}
+								},
+								disabled: function (key, opt) {
+									return !(this[0].dataset.authId && channel.data.usersByAuthId[this[0].dataset.authId] && ["host", "moderator", "hubAdministrator"].indexOf(app.user.role) >= 0)
+								},
+							},
+							"mod": {
+								name: i18n.t("nuclearnode:chat.mod"),
+								className: "contextMenuModButton",
+								callback: function () {
+									var button = jQ(".contextMenuModButton")[0];
+									if (button.dataset.state === "1") {
+										alert("Modding " + this[0].dataset.authId + " (not actually implemented yet because testing)");
+										return true;
+									}
+									else {
+										button.dataset.state = "1";
+										button.textContent = "Are you sure?";
+										return false;
+									}
+								},
+								disabled: function (key, opt) {
+									return !(this[0].dataset.authId && channel.data.usersByAuthId[this[0].dataset.authId] && ["host", "hubAdministrator"].indexOf(app.user.role) >= 0)
+								},
+							},
+							"mute": {
+								name: "Mute",
+								callback: function () {
+									alert("Muting " + this[0].dataset.authId + " (not actually implemented yet because testing)");
+									return true;
+								},
+								disabled: function (key, opt) {
+									return !(this[0].dataset.authId && channel.data.usersByAuthId[this[0].dataset.authId])
+								},
+							},
+						}
+					});
+					
+					jQ(document.body).on("contextmenu:blur", ".context-menu-item",
+						function (e) {
+							var contextMenuItems = jQ(".context-menu-item");
+							for (var i = 0; i < contextMenuItems.length; i++) {
+								var item = contextMenuItems[i];
+								if (item.classList.contains("contextMenuBanButton")) {
+									item.dataset.state = "0";
+									item.textContent = i18n.t("nuclearnode:chat.ban");
+								}
+								else if (item.classList.contains("contextMenuModButton")) {
+									item.dataset.state = "0";
+									item.textContent = i18n.t("nuclearnode:chat.mod");
+								}
+							}
+						}
+					);
+				});
+			
 				// A little wrapper thing to make the canvas fill up the gameImages object
 				var ctx = canvasContext;
 				ctx.drawImageRedux = ctx.drawImage; // Do a little wrapping
@@ -2099,7 +2130,7 @@ var source = function() {
 								if ((index = lowercaseText.indexOf(app.user.displayName.toLowerCase())) !== -1) {
 									if ((index === 0 || lowercaseText[index-1].search(/\W/) !== -1) &&
 										(index + app.user.displayName.length >= lowercaseText.length || lowercaseText[index + app.user.displayName.length].search(/\W/) !== -1)) {
-										if (document.hidden) {
+										if (bpOverlay.is_hidden) {
 											bpOverlay.notificationSound.play();
 										}
 										notified = true;
@@ -2111,7 +2142,7 @@ var source = function() {
 										if ((index = lowercaseText.indexOf(bpOverlay.alias[i])) !== -1) {
 											if ((index === 0 || lowercaseText[index-1].search(/\W/) !== -1) &&
 												(index + bpOverlay.alias[i].length >= lowercaseText.length || lowercaseText[index + bpOverlay.alias[i].length].search(/\W/) !== -1)) {
-												if (document.hidden) {
+												if (bpOverlay.is_hidden) {
 													bpOverlay.notificationSound.play();
 												}
 												notified = true;
@@ -2184,13 +2215,6 @@ var source = function() {
 				}
 				// Those buttons are being rid of so we don't accidentally ban people when trying to chat
 				// A list of people that you can ban will be provided
-				
-				// Context menus!
-				document.body.addEventListener("contextmenu", function (e) {
-					if (e.target.className === "User" && e.target.dataset.authId) {
-						e.preventDefault();
-					}
-				});
 			
 				// Chat message wrapper
 				var gameChat = channel.appendToChat;
@@ -2244,6 +2268,11 @@ var source = function() {
 							bpOverlay.adventureFirstRun=true;
 						}
 
+						// Hide the context menu if it is the user's turn
+						if (channel.data.actors[actor].authId === window.app.user.authId) {
+							jQ('#context-menu-layer').trigger('mousedown');
+						}
+						
 						//invisible break
 						sendAdventureMessage("break", "rgb(20,20,20");
 												
@@ -2618,7 +2647,7 @@ var source = function() {
 						}
 
 						// Play the notification sound if specified
-						if (bpOverlay.endGameNotification && document.hidden) {
+						if (bpOverlay.endGameNotification && bpOverlay.is_hidden) {
 							bpOverlay.notificationSound.play();
 						}
 						
@@ -2758,7 +2787,7 @@ var source = function() {
 				// Probably a better way of doing this
 				// Lol. TFW web-console css is hard
 				var style = document.createElement('style');
-				style.appendChild(document.createTextNode('.headerButtonDiv {  display: -webkit-box;  display: -moz-box;  display: -webkit-flex;  display: -ms-flexbox;  display: box;  display: flex;  opacity: 0.3;  -ms-filter: "progid:DXImageTransform.Microsoft.Alpha(Opacity=30)";  filter: alpha(opacity=30);} .headerButtonDiv:hover {  opacity: 1;  -ms-filter: none;  filter: none;} button.headerButton {  border: none;  background: none;  cursor: pointer;  opacity: 0.5;  -ms-filter: "progid:DXImageTransform.Microsoft.Alpha(Opacity=50)";  filter: alpha(opacity=50);  display: -webkit-box;  display: -moz-box;  display: -webkit-flex;  display: -ms-flexbox;  display: box;  display: flex;} button.headerButton:hover {  opacity: 0.8;  -ms-filter: "progid:DXImageTransform.Microsoft.Alpha(Opacity=80)";  filter: alpha(opacity=80);} button.headerButton:active {  opacity: 1;  -ms-filter: none;  filter: none;} .infoTableDiv::-webkit-scrollbar { width: 15px; height: 15px; } .infoTableDiv::-webkit-scrollbar-button { height: 0px; width: 0px; } .infoTableDiv::-webkit-scrollbar-track { background-color: rgba(0,0,0,0.05); } .infoTableDiv::-webkit-scrollbar-thumb { background-color: rgba(255,255,255,0.1); border: 3px solid transparent; -webkit-border-radius: 6px; border-radius: 6px; -webkit-background-clip: content; -moz-background-clip: content; background-clip: content-box; } .infoTableDiv::-webkit-scrollbar-thumb:hover { background-color: rgba(255,255,255,0.15); } .infoTableDiv::-webkit-scrollbar-corner { background-color: rgba(255,255,255,0.1); }#overlaySettingsTab{text-align:left;overflow-y:auto}#overlaySettingsTab h2{padding:.5em .5em 0;opacity:.5;-ms-filter:"alpha(Opacity=50)";filter:alpha(opacity=50)}#overlaySettingsTab h3{padding:.5em .5em 0;opacity:.5;-ms-filter:"alpha(Opacity=50)";filter:alpha(opacity=50)}#overlaySettingsTab table{width:100%;padding:.5em}#overlaySettingsTab table tr td:nth-child(1){width:40%}#overlaySettingsTab table tr td:nth-child(2){width:60%}#overlaySettingsTab table button:not(.UnbanUser),#overlaySettingsTab table input,#overlaySettingsTab table select,#overlaySettingsTab table textarea{width:100%;background:#444;border:none;padding:.25em;color:#fff;font:inherit}#overlaySettingsTab table textarea{resize:vertical;min-height:3em}#overlaySettingsTab table ul{list-style:none}#overlaySettingsTab .User .UserRole_hubAdministrator:before{content:\'[★]\';cursor:default;color:#c63}#overlaySettingsTab .User .UserRole_host:before{content:\'★\';cursor:default;color:#dc8}#overlaySettingsTab .User .UserRole_administrator:before{content:\'☆\';cursor:default;color:#dc8}#overlaySettingsTab .User .UserRole_moderator:before{content:\'●\';cursor:default;color:#346192}#overlaySettingsTab .Actions button{border:none;background:0 0;cursor:pointer;margin:0 .25em;outline:0;font-weight:400;font-size:smaller;opacity:.8;-ms-filter:"alpha(Opacity=80)";filter:alpha(opacity=80)}#overlaySettingsTab .Actions button.BanUser{color:#a00}#overlaySettingsTab .Actions button.ModUser,#overlaySettingsTab .Actions button.UnmodUser{color:#2a3} .Actions button.MuteUser{color:#ddd} .Actions button.UnmuteUser{color:#eee} #overlaySettingsTab .Actions button:hover{opacity:1;-ms-filter:none;filter:none}#overlaySettingsTab .Actions button:active{background:rgba(255,0,0,.2)}#overlaySettingsTab input{-moz-user-select:text;-webkit-user-select:text;-ms-user-select:text}#ChatLog .highlighted{background: rgba(255, 0, 0, 0.05);}#ChatLog .highlighted:hover {background: rgba(255, 0, 0, 0.1);}#bpContextMenu {background:#ffffff;position:absolute;min-width:150px;border:1px solid #0000ff}#contextList {list-style-type:none;padding:-2px 0px 0px 0px;margin:0;}.contextMenuButton {text-align:left;width:100%;background:#ffffff;border:none;whitespace:no-wrap;}.contextMenuButton:hover {background:#aeaeff;}'));
+				style.appendChild(document.createTextNode('.headerButtonDiv {  display: -webkit-box;  display: -moz-box;  display: -webkit-flex;  display: -ms-flexbox;  display: box;  display: flex;  opacity: 0.3;  -ms-filter: "progid:DXImageTransform.Microsoft.Alpha(Opacity=30)";  filter: alpha(opacity=30);} .headerButtonDiv:hover {  opacity: 1;  -ms-filter: none;  filter: none;} button.headerButton {  border: none;  background: none;  cursor: pointer;  opacity: 0.5;  -ms-filter: "progid:DXImageTransform.Microsoft.Alpha(Opacity=50)";  filter: alpha(opacity=50);  display: -webkit-box;  display: -moz-box;  display: -webkit-flex;  display: -ms-flexbox;  display: box;  display: flex;} button.headerButton:hover {  opacity: 0.8;  -ms-filter: "progid:DXImageTransform.Microsoft.Alpha(Opacity=80)";  filter: alpha(opacity=80);} button.headerButton:active {  opacity: 1;  -ms-filter: none;  filter: none;} .infoTableDiv::-webkit-scrollbar { width: 15px; height: 15px; } .infoTableDiv::-webkit-scrollbar-button { height: 0px; width: 0px; } .infoTableDiv::-webkit-scrollbar-track { background-color: rgba(0,0,0,0.05); } .infoTableDiv::-webkit-scrollbar-thumb { background-color: rgba(255,255,255,0.1); border: 3px solid transparent; -webkit-border-radius: 6px; border-radius: 6px; -webkit-background-clip: content; -moz-background-clip: content; background-clip: content-box; } .infoTableDiv::-webkit-scrollbar-thumb:hover { background-color: rgba(255,255,255,0.15); } .infoTableDiv::-webkit-scrollbar-corner { background-color: rgba(255,255,255,0.1); }#overlaySettingsTab{text-align:left;overflow-y:auto}#overlaySettingsTab h2{padding:.5em .5em 0;opacity:.5;-ms-filter:"alpha(Opacity=50)";filter:alpha(opacity=50)}#overlaySettingsTab h3{padding:.5em .5em 0;opacity:.5;-ms-filter:"alpha(Opacity=50)";filter:alpha(opacity=50)}#overlaySettingsTab table{width:100%;padding:.5em}#overlaySettingsTab table tr td:nth-child(1){width:40%}#overlaySettingsTab table tr td:nth-child(2){width:60%}#overlaySettingsTab table button:not(.UnbanUser),#overlaySettingsTab table input,#overlaySettingsTab table select,#overlaySettingsTab table textarea{width:100%;background:#444;border:none;padding:.25em;color:#fff;font:inherit}#overlaySettingsTab table textarea{resize:vertical;min-height:3em}#overlaySettingsTab table ul{list-style:none}#overlaySettingsTab .User .UserRole_hubAdministrator:before{content:\'[★]\';cursor:default;color:#c63}#overlaySettingsTab .User .UserRole_host:before{content:\'★\';cursor:default;color:#dc8}#overlaySettingsTab .User .UserRole_administrator:before{content:\'☆\';cursor:default;color:#dc8}#overlaySettingsTab .User .UserRole_moderator:before{content:\'●\';cursor:default;color:#346192}#overlaySettingsTab .Actions button{border:none;background:0 0;cursor:pointer;margin:0 .25em;outline:0;font-weight:400;font-size:smaller;opacity:.8;-ms-filter:"alpha(Opacity=80)";filter:alpha(opacity=80)}#overlaySettingsTab .Actions button.BanUser{color:#a00}#overlaySettingsTab .Actions button.ModUser,#overlaySettingsTab .Actions button.UnmodUser{color:#2a3} .Actions button.MuteUser{color:#ddd} .Actions button.UnmuteUser{color:#eee} #overlaySettingsTab .Actions button:hover{opacity:1;-ms-filter:none;filter:none}#overlaySettingsTab .Actions button:active{background:rgba(255,0,0,.2)}#overlaySettingsTab input{-moz-user-select:text;-webkit-user-select:text;-ms-user-select:text}#ChatLog .highlighted{background: rgba(255, 0, 0, 0.05);}#ChatLog .highlighted:hover {background: rgba(255, 0, 0, 0.1);}'));
 				document.getElementsByTagName('head')[0].appendChild(style);
 				
 				// Load the hideDead on/off images
@@ -2893,9 +2922,6 @@ var source = function() {
 					}
 				);
 				
-				// Make the context menu.
-				// Temporarily disabled.
-				//createContextMenu();
 				
 				//Add the fourth button on the settingsTab that hopefully doesn't interfere with the others.
 				var sideButtons = document.getElementById("SidebarTabButtons");
