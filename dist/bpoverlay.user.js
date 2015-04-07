@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         BombParty Overlay
-// @version      1.5.1
+// @version      1.5.2
 // @description  Overlay + Utilities for BombParty!
 // @icon         https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/dist/icon.png
 // @icon64       https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/dist/icon64.png
@@ -78,7 +78,7 @@ var source = function() {
 			// Since this is running via a script loaded on page load, it's difficult ensure the overlay runs after everything has loaded
 			// This piece of code makes sure that all relevant things are loaded before executing the rest of the code
 			// We may need to add more to this long-ass if statement if we add more features in the future
-			if (!(window.hasOwnProperty("channel") && channel.socket && channel.data && channel.appendToChat && channel.socket.listeners("chatMessage").length && channel.socket.listeners("setActivePlayerIndex").length && channel.socket.listeners("winWord").length && channel.socket.listeners("setPlayerLives").length && channel.socket.listeners("setPlayerState").length && channel.socket.listeners("endGame").length && window.hasOwnProperty("JST") && JST["nuclearnode/chatMessage"] && document.getElementById("Sidebar") && document.getElementById("ChatLog"))) {
+			if (!(window.hasOwnProperty("channel") && channel.socket && channel.data && channel.appendToChat && channel.socket.listeners("chatMessage").length && channel.socket.listeners("setActivePlayerIndex").length && channel.socket.listeners("winWord").length && channel.socket.listeners("setPlayerLives").length && channel.socket.listeners("setPlayerState").length && channel.socket.listeners("endGame").length && window.hasOwnProperty("JST") && JST["nuclearnode/chatMessage"] && document.getElementById("Sidebar") && document.getElementById("ChatLog") && jQ)) {
 				console.log("Everything's not loaded yet, trying again in a second...");
 				setTimeout(main, 1000);
 				return;
