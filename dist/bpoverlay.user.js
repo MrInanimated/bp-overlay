@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         BombParty Overlay
-// @version      1.5.1
+// @version      1.5.3
 // @description  Overlay + Utilities for BombParty!
 // @icon         https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/dist/icon.png
 // @icon64       https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/dist/icon64.png
@@ -17,8 +17,8 @@
 // @resource     dragOn https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/dist/dragOn.png
 // @resource     hideDeadOn https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/dist/hideDeadOn.png
 // @resource     hideDeadOff https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/dist/hideDeadOff.png
-// @resource     contextMenuPlugin https://raw.githubusercontent.com/medialize/jQuery-contextMenu/master/src/jquery.contextMenu.js
-// @resource     contextMenuPluginCSS https://raw.githubusercontent.com/medialize/jQuery-contextMenu/master/src/jquery.contextMenu.css
+// @resource     contextMenuPlugin https://raw.githubusercontent.com/MrInanimated/bp-overlay/experimental2/dist/contextmenu.js
+// @resource     contextMenuPluginCSS https://raw.githubusercontent.com/MrInanimated/bp-overlay/experimental2/dist/contextmenu.css
 // @grant        GM_getResourceText
 // @grant        GM_getResourceURL
 // @grant        GM_getValue
@@ -138,6 +138,7 @@ var source = function() {
 						credits1: "Code Monkey",
 						credits2: "Code Amoeba",
 						credits3: "Frenchifier",
+						creditsContextMenu: "Context Menu",
 						creditsAutolinker: "Autolinker",
 						creditsTwitchEmotes: "Twitch Emotes",
 						creditsTextText: "With thanks to the English BombParty community",
@@ -250,6 +251,7 @@ var source = function() {
 						credits1: "Code Monkey",
 						credits2: "Code Amoeba",
 						credits3: "Traduction",
+						creditsContextMenu: "Menu Contextuel",
 						creditsAutolinker: "Liens automatiques",
 						creditsTwitchEmotes: "Emoticones Twitch",
 						creditsTextText: "Remerciements à la communauté anglaise de BombParty",
@@ -3189,7 +3191,8 @@ var source = function() {
 				<tr><td>" + tran.t("credits2") + "</td><td>Skandalabrandur</td></tr>\
 				<tr><td>" + tran.t("credits3") + "</td><td>Sanc</td></tr>\
 				<tr><td>" + tran.t("creditsAutolinker") + "</td><td><a href=\"https://github.com/gregjacobs/Autolinker.js\">Autolinker.js</a></td></tr>\
-				<tr><td>" + tran.t("creditsTwitchEmotes") + "</td><td><a href=\"http://twitchemotes.com/\">twitchemotes.com</a></td></tr>";
+				<tr><td>" + tran.t("creditsTwitchEmotes") + "</td><td><a href=\"http://twitchemotes.com/\">twitchemotes.com</a></td></tr>\
+				<tr><td>" + tran.t("creditsContextMenu") + "</td><td><a href=\"http://medialize.github.io/jQuery-contextMenu/\">Medialize</a></td></tr>";
 				creditsTableWrapper.appendChild(creditsTable);				
 				settingsTab.appendChild(creditsTableWrapper);
 				
