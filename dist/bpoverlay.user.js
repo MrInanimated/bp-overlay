@@ -9,6 +9,8 @@
 // @match        http://bombparty.sparklinlabs.com/play/*
 // @resource     twitch_global http://twitchemotes.com/api_cache/v2/global.json
 // @resource     twitch_subscriber http://twitchemotes.com/api_cache/v2/subscriber.json
+// @resource     fallback_twitch_global http://twitchemotes.com/global.json
+// @resource     fallback_twitch_subscriber http://twitchemotes.com/subscriber.json
 // @resource     autoScrollOn https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/dist/chatdown.png
 // @resource     autoScrollOff https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/dist/chatdownoff.png
 // @resource     autoFocusOn https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/dist/focusOn.png
@@ -52,15 +54,23 @@ try{
 	// Grab the twitch emotes
 	var tg = GM_getResourceText("twitch_global");
 	var ts = GM_getResourceText("twitch_subscriber");
+	var ftg = GM_getResourceText("fallback_twitch_global");
+	var fts = GM_getResourceText("fallback_twitch_subscriber");
 	json_parse(tg);
 	json_parse(ts);
+	json_parse(ftg);
+	json_parse(fts);
 	tg = (tg === "") ? "undefined" : tg;
 	ts = (ts === "") ? "undefined" : ts;
+	ftg = (ftg === "") ? "undefined" : ftg;
+	fts = (fts === "") ? "undefined" : fts;
 	var te = document.createElement('script');
 	te.setAttribute("type", "application/javascript");
 	te.textContent = '\
 	var twitch_global = ' + tg + ';\
-	var twitch_subscriber = ' + ts + ';'
+	var twitch_subscriber = ' + ts + ';\
+	var fallback_twitch_global = ' + ftg + ';\
+	var fallback_twitch_subscriber = ' + fts + ';'
 	document.body.appendChild(te);
 	document.body.removeChild(te);
 }
@@ -2015,22 +2025,50 @@ var source = function() {
 			// Do a bit of processing on the twitch emotes
 			var twitchEmotes = {};
 			var globalEmotes = {};
-			if (twitch_global && twitch_subscriber) {
+			try {
 				var globalTemplate = twitch_global.template;
 				var subscriberTemplate = twitch_subscriber.template;
 
+				if (!twitch_global.emotes || !twitch_subscriber.channels) {
+					throw Exception();
+				}
+				
 				for (var i in twitch_global.emotes) {
+					if (!twitch_global.emotes[i].image_id) {
+						throw Exception();
+					}
 					globalEmotes[i] = {image_id: twitch_global.emotes[i].image_id};
 				}
 				for (var i in twitch_subscriber.channels) {
+					if (!twitch_subscriber.channels[i].emotes.length) {
+						throw Exception();
+					}
 					for (var j = 0; j < twitch_subscriber.channels[i].emotes.length; j++) {
+						if (!twitch_subscriber.channels[i].emotes[j].code || !twitch_subscriber.channels[i].emotes[j].image_id) {
+							throw Exception();
+						}
 						var code = twitch_subscriber.channels[i].emotes[j].code;
 						twitchEmotes[code] = {image_id: twitch_subscriber.channels[i].emotes[j].image_id, channel: i};
 					}
 				}
 			}
-			else {
-				bpOverlay.emoteError = true;
+			catch (e) {
+				try {
+					console.log("twitchemotes.com api v2 loading failed, switching to fallback emotes...");
+					bpOverlay.emoteFallback = true;
+					for (var i in fallback_twitch_global) {
+						globalEmotes[i] = {src: "http:" + fallback_twitch_global[i].url};
+					}
+					for (var i in fallback_twitch_subscriber) {
+						for (var j in fallback_twitch_subscriber[i].emotes) {
+							twitchEmotes[j] = {src: "http:" + fallback_twitch_subscriber[i].emotes[j], channel: i};
+						}
+					}
+				}
+				catch (e) {
+					console.log("Alright, the fallback emotes failed as well. :(");
+					bpOverlay.emoteError = true;
+				}
 			}
 			
 			// It now makes more sense to have the twitch emotes in a separate function
@@ -2038,14 +2076,24 @@ var source = function() {
 				if (bpOverlay.twitchOn && !bpOverlay.emoteError) {
 				
 					for (var i in globalEmotes) {
-						var src = globalTemplate.small.replace("{image_id}", globalEmotes[i].image_id);
+						if (!bpOverlay.emoteFallback) {
+							var src = globalTemplate.small.replace("{image_id}", globalEmotes[i].image_id);
+						}
+						else {
+							var src = globalEmotes[i].src;
+						}
 						message = message.replace(new RegExp("\\b" + i + "\\b", "g"), "<img src=\"" + src + "\" alt=\"" + i + "\" title=\"" + i + "\" style=\"vertical-align:-30%\"></img>");
 					}
 				
 					message = message.replace(/\[[^\[\]]*\]/g, function (match) {
 						var code = match.substring(1, match.length - 1);
 						if (twitchEmotes[code]) {
-							var src = (twitchEmotes[code].global ? globalTemplate : subscriberTemplate).small.replace("{image_id}", twitchEmotes[code].image_id);
+							if (!bpOverlay.emoteFallback) {
+								var src = (twitchEmotes[code].global ? globalTemplate : subscriberTemplate).small.replace("{image_id}", twitchEmotes[code].image_id);
+							}
+							else {
+								var src = twitchEmotes[code].src;
+							}
 							var title = (twitchEmotes[code].channel ? twitchEmotes[code].channel + " &gt; " : "") + code;
 							return "<img src=\"" + src + "\" alt=\"" + match + "\" title=\"" + title + "\" style=\"vertical-align:-30%\"></img>";
 						}
