@@ -2413,7 +2413,10 @@ var source = function() {
 								// If focusNext is true (i.e. it's immediately after the player's turn)
 								// We set the focus to the chatbox, and reset focusNext.
 								setTimeout(function() {
-									document.getElementById("ChatInputBox").focus();
+									// We set focus to the chat only if the user is not the current player
+									if (channel.data.actors[channel.data.activePlayerIndex].authId !== app.user.authId) {
+										document.getElementById("ChatInputBox").focus();
+									}
 								}, 400);
 								bpOverlay.focusNext = false;
 							
