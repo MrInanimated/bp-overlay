@@ -23,7 +23,7 @@
 		}
 	},
 	"css": {
-		"text": "#JoinGameButton{line-height:0;visibility:hidden;padding:0}#JoinGameButton:after{content:';o;';text-indent:0;display:block;line-height:initial;visibility:visible;font-size:32pt;color:#fff;text-shadow:0 0 24px #fff;padding:.5em 1em}#App{background:url(https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/themes/pingu/bg.png) center}#AppsBar,#Sidebar{background:#0D0D0D}#App>header{box-shadow:0 0 2em rgba(51,153,255,.4);background:linear-gradient(to bottom,rgba(13,13,13,.9) 60%,rgba(240,240,240,.1) 100%)}"
+		"text": "#JoinGameButton{line-height:0;visibility:hidden;padding:0}#JoinGameButton:after{content:';o;';text-indent:0;display:block;line-height:initial;visibility:visible;font-size:32pt;color:#fff;text-shadow:0 0 24px #fff;padding:.5em 1em}#App{background:#030303}#App > main{background:radial-gradient(circle, rgba(255,255,255,0.2) 0px, rgba(255,255,255,0) 150px),linear-gradient(to bottom,rgba(0,0,0,0) 0%, rgba(0, 0, 0, 0.8) 100%),url(https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/themes/pingu/hexes1.png) center no-repeat, url(https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/themes/pingu/hexes.png) center,radial-gradient(circle, #00a4e3 40px, #00b2e5 70px, #00d5dd 85px, #0E7AAD 100px, #030303 150px),#030303}#AppsBar,#Sidebar{background:#0D0D0D}#App>header{box-shadow:0 0 2em rgba(51,153,255,.4);background:linear-gradient(to bottom,rgba(13,13,13,.9) 60%,rgba(240,240,240,.1) 100%);z-index:1}"
 	},
 	"textStyles": {	
 		"highlightedText": {
