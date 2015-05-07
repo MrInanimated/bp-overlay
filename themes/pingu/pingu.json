@@ -1,0 +1,36 @@
+{
+	"images": {
+		"bomb": {
+	   		"src": "https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/themes/pingu/bomb.png"
+		},
+		"arrow": {
+			"src": "https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/themes/pingu/arrow.png"
+		},
+		"heart": {
+			"src": "https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/themes/pingu/heart.png"
+		},
+		"heartEmpty": {
+			"src": "https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/themes/pingu/heartEmpty.png"
+		},
+		"letter": {
+			"src": "https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/themes/pingu/letter.png"
+		},
+		"sparkle": {
+			"src": "https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/themes/pingu/sparkle.png"
+		},
+		"avatarPlaceHolder": {
+			"src": "https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/themes/pingu/avatarPlaceHolder.png"
+		}
+	},
+	"css": {
+		"text": "#JoinGameButton{line-height:0;visibility:hidden;padding:0}#JoinGameButton:after{content:';o;';text-indent:0;display:block;line-height:initial;visibility:visible;font-size:32pt;color:#fff;text-shadow:0 0 24px #fff;padding:.5em 1em}#App{background:linear-gradient(to bottom,rbga(0,0,0,0),rgba(0,0,0,50)),url(https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/themes/pingu/hexes2.png) center no-repeat,url(https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/themes/pingu/hexes.png) center,radial-gradient(150px at center,#007fb8 0,#007cc0 54px,#007cc0 70px,#003d5a 90px,#030303 120px),#030303}#AppsBar,#Sidebar{background:#0D0D0D}#App>header{box-shadow:0 0 2em rgba(51,153,255,.4);background:linear-gradient(to bottom,rgba(13,13,13,.9) 60%,rgba(240,240,240,.1) 100%)}"
+	},
+	"textStyles": {	
+		"highlightedText": {
+			"color": "#00BDEC"
+		},
+		"statusText": {
+			"color": "#F5F5F5"
+		}
+	}
+}
