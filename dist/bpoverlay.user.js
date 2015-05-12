@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         BombParty Overlay
-// @version      1.5.5
+// @version      1.5.6
 // @description  Overlay + Utilities for BombParty!
 // @icon         https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/dist/icon.png
 // @icon64       https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/dist/icon64.png
@@ -78,11 +78,11 @@ try{
 	fts = (fts === "") ? "undefined" : fts;
 	var te = document.createElement('script');
 	te.setAttribute("type", "application/javascript");
-	te.textContent = '\
-	var twitch_global = ' + tg + ';\
-	var twitch_subscriber = ' + ts + ';\
-	var fallback_twitch_global = ' + ftg + ';\
-	var fallback_twitch_subscriber = ' + fts + ';'
+	te.textContent = 
+	'var twitch_global = ' + tg + ';' +
+	'var twitch_subscriber = ' + ts + ';' +
+	'var fallback_twitch_global = ' + ftg + ';' +
+	'var fallback_twitch_subscriber = ' + fts + ';';
 	document.body.appendChild(te);
 	document.body.removeChild(te);
 }
@@ -91,16 +91,16 @@ finally {
 
 var te = document.createElement('script');
 te.setAttribute("type", "application/javascript");
-te.textContent = 'var bpImgUrls = {\
-	autoScrollOn : "' + GM_getResourceURL("autoScrollOn") + '",\
-	autoScrollOff : "' + GM_getResourceURL("autoScrollOff") + '",\
-	autoFocusOn : "' + GM_getResourceURL("autoFocusOn") + '",\
-	autoFocusOff : "' + GM_getResourceURL("autoFocusOff") + '",\
-	dragOff : "' + GM_getResourceURL("dragOff") + '",\
-	dragOn : "' + GM_getResourceURL("dragOn") + '",\
-	hideDeadOn : "' + GM_getResourceURL("hideDeadOn") + '",\
-	hideDeadOff : "' + GM_getResourceURL("hideDeadOff") + '",\
-};';
+te.textContent = 'var bpImgUrls = {' + 
+	'autoScrollOn : "' + GM_getResourceURL("autoScrollOn") + '",' +
+	'autoScrollOff : "' + GM_getResourceURL("autoScrollOff") + '",' +
+	'autoFocusOn : "' + GM_getResourceURL("autoFocusOn") + '",' +
+	'autoFocusOff : "' + GM_getResourceURL("autoFocusOff") + '",' +
+	'dragOff : "' + GM_getResourceURL("dragOff") + '",' +
+	'dragOn : "' + GM_getResourceURL("dragOn") + '",' +
+	'hideDeadOn : "' + GM_getResourceURL("hideDeadOn") + '",' +
+	'hideDeadOff : "' + GM_getResourceURL("hideDeadOff") + '",' +
+'};';
 document.body.appendChild(te);
 document.body.removeChild(te);
 
