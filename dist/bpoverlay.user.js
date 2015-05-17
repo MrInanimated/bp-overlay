@@ -226,6 +226,7 @@ var source = function() {
 						muted: "(muted)",
 						muteUser: "Mute",
 						unmuteUser: "Unmute",
+						areYouSure: "Are you sure?",
 						ignoringText: "Muted Users",
 						ignoringEmpty: "Nobody is currently muted.",
 						scoreName: "Leaderboard score",
@@ -248,7 +249,8 @@ var source = function() {
 							ukFem: "GB Female",
 							fran: "FR",
 						},
-						updateText: "Experimental! (2015-05-03)<br />User context menu added.",
+						twitchEmoteError: "Error: Twitch emotes have not been loaded.",
+						updateText: "New Update! (2015-05-17)<br />Right-clicking on a username brings up a menu of actions.<br />New twitch emote format: subscriber emotes are now called using just [emote].",
 					},
 					fr: {
 						timeText: "Temps Écoulé : ",
@@ -339,6 +341,7 @@ var source = function() {
 						muted: "(muted)",
 						muteUser: "Ignorer",
 						unmuteUser: "Autoriser",
+						areYouSure: "Êtes-vous sûr ?",
 						ignoringText: "Utilisateurs ignorés",
 						ignoringEmpty: "Personne n'est ignoré actuellement.",
 						scoreName: "Score Classement",
@@ -361,7 +364,8 @@ var source = function() {
 							ukFem: "GB Femme",
 							fran: "FR",
 						},
-						updateText: "Nouvelle mise à jour! (2015-03-141592653)<br />Tableau des scores, reconnaissance vocale dans le chat, réorganisation du BpOS, correction de bugs.",
+						twitchEmoteError: "Erreur : Les émoticones Twitch n'ont pas été chargées.",
+						updateText: "Nouvelle mise à jour ! (17-05-2015)<br/>Cliquer-droit sur un pseudonyme ouvre un menu contextuel comportant plusieurs actions.<br/>Nouveau format d'emoticones Twitch : les emotes subscriber sont désormais appelées en utilisant [emote].",
 					},
 				},
 				language: (document.cookie.indexOf("i18next=fr") !== -1 ? "fr" : "en"),
@@ -2091,7 +2095,7 @@ var source = function() {
 									}
 									else {
 										button.dataset.state = "1";
-										button.textContent = "Are you sure?";
+										button.textContent = tran.t("areYouSure");
 										return false;
 									}
 								},
@@ -2110,7 +2114,7 @@ var source = function() {
 									}
 									else {
 										button.dataset.state = "1";
-										button.textContent = "Are you sure?";
+										button.textContent = tran.t("areYouSure");
 										return false;
 									}
 								},
@@ -3724,7 +3728,7 @@ var source = function() {
 			channel.appendToChat("Info", tran.t("updateText"));
 			
 			if (bpOverlay.emoteError) {
-				channel.appendToChat("Info", "Error: Twitch emotes have not been loaded.");
+				channel.appendToChat("Info", tran.t("twitchEmoteError"));
 			}
 		}
 		main();
