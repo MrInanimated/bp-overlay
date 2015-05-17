@@ -1,14 +1,16 @@
 // ==UserScript==
 // @name         BombParty Overlay
-// @version      1.5.3
+// @version      1.5.6
 // @description  Overlay + Utilities for BombParty!
 // @icon         https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/dist/icon.png
 // @icon64       https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/dist/icon64.png
 // @downloadURL  https://github.com/MrInanimated/bp-overlay/raw/master/dist/bpoverlay.user.js
 // @author       MrInanimated and Skandalabrandur
 // @match        http://bombparty.sparklinlabs.com/play/*
-// @resource     twitch_global http://twitchemotes.com/global.json
-// @resource     twitch_subscriber http://twitchemotes.com/subscriber.json
+// @resource     twitch_global http://twitchemotes.com/api_cache/v2/global.json
+// @resource     twitch_subscriber http://twitchemotes.com/api_cache/v2/subscriber.json
+// @resource     fallback_twitch_global http://twitchemotes.com/global.json
+// @resource     fallback_twitch_subscriber http://twitchemotes.com/subscriber.json
 // @resource     autoScrollOn https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/dist/chatdown.png
 // @resource     autoScrollOff https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/dist/chatdownoff.png
 // @resource     autoFocusOn https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/dist/focusOn.png
@@ -17,6 +19,8 @@
 // @resource     dragOn https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/dist/dragOn.png
 // @resource     hideDeadOn https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/dist/hideDeadOn.png
 // @resource     hideDeadOff https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/dist/hideDeadOff.png
+// @resource     contextMenuPlugin https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/dist/contextmenu.js
+// @resource     contextMenuPluginCSS https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/dist/contextmenu.css
 // @grant        GM_getResourceText
 // @grant        GM_getResourceURL
 // @grant        GM_getValue
@@ -33,6 +37,16 @@ function addJQuery(callback) {
     var script = document.createElement("script");
     script.textContent = "window.jQ=jQuery.noConflict(true);(" + callback.toString() + ")();";
     document.body.appendChild(script);
+	
+	// Load the context menu plugin stuff
+    // This is a pretty simple task to require a whole plugin for, but I want to futureproof for now
+	var script = document.createElement("script");
+	script.textContent = "(function(jQuery){" + GM_getResourceText("contextMenuPlugin") + ";})(jQ);";
+	document.body.appendChild(script);
+	
+	var css = document.createElement("style");
+	css.textContent = GM_getResourceText("contextMenuPluginCSS");
+	document.head.appendChild(css);
   }, false);
   document.body.appendChild(script);
 }
@@ -44,25 +58,49 @@ function main() {
 // load jQuery and execute the main function
 addJQuery(main);
 
-// Grab the twitch emotes
-var tg = GM_getResourceText("twitch_global");
-var ts = GM_getResourceText("twitch_subscriber");
+// JSON Parser, by Douglas Crockford
+// This is necessary because in this environment I don't have access to the JSON object
+var json_parse=function(){"use strict";var e,t,n={'"':'"',"\\":"\\","/":"/",b:"\b",f:"\f",n:"\n",r:"\r",t:"	"},r,i=function(t){throw{name:"SyntaxError",message:t,at:e,text:r}},s=function(n){if(n&&n!==t){i("Expected '"+n+"' instead of '"+t+"'")}t=r.charAt(e);e+=1;return t},o=function(){var e,n="";if(t==="-"){n="-";s("-")}while(t>="0"&&t<="9"){n+=t;s()}if(t==="."){n+=".";while(s()&&t>="0"&&t<="9"){n+=t}}if(t==="e"||t==="E"){n+=t;s();if(t==="-"||t==="+"){n+=t;s()}while(t>="0"&&t<="9"){n+=t;s()}}e=+n;if(!isFinite(e)){i("Bad number")}else{return e}},u=function(){var e,r,o="",u;if(t==='"'){while(s()){if(t==='"'){s();return o}if(t==="\\"){s();if(t==="u"){u=0;for(r=0;r<4;r+=1){e=parseInt(s(),16);if(!isFinite(e)){break}u=u*16+e}o+=String.fromCharCode(u)}else if(typeof n[t]==="string"){o+=n[t]}else{break}}else{o+=t}}}i("Bad string")},a=function(){while(t&&t<=" "){s()}},f=function(){switch(t){case"t":s("t");s("r");s("u");s("e");return true;case"f":s("f");s("a");s("l");s("s");s("e");return false;case"n":s("n");s("u");s("l");s("l");return null}i("Unexpected '"+t+"'")},l,c=function(){var e=[];if(t==="["){s("[");a();if(t==="]"){s("]");return e}while(t){e.push(l());a();if(t==="]"){s("]");return e}s(",");a()}}i("Bad array")},h=function(){var e,n={};if(t==="{"){s("{");a();if(t==="}"){s("}");return n}while(t){e=u();a();s(":");if(Object.hasOwnProperty.call(n,e)){i('Duplicate key "'+e+'"')}n[e]=l();a();if(t==="}"){s("}");return n}s(",");a()}}i("Bad object")};l=function(){a();switch(t){case"{":return h();case"[":return c();case'"':return u();case"-":return o();default:return t>="0"&&t<="9"?o():f()}};return function(n,s){var o;r=n;e=0;t=" ";o=l();a();if(t){i("Syntax error")}return typeof s==="function"?function u(e,t){var n,r,i=e[t];if(i&&typeof i==="object"){for(n in i){if(Object.prototype.hasOwnProperty.call(i,n)){r=u(i,n);if(r!==undefined){i[n]=r}else{delete i[n]}}}}return s.call(e,t,i)}({"":o},""):o}}()
+
+try{
+	// Grab the twitch emotes
+	var tg = GM_getResourceText("twitch_global");
+	var ts = GM_getResourceText("twitch_subscriber");
+	var ftg = GM_getResourceText("fallback_twitch_global");
+	var fts = GM_getResourceText("fallback_twitch_subscriber");
+	json_parse(tg);
+	json_parse(ts);
+	json_parse(ftg);
+	json_parse(fts);
+	tg = (tg === "") ? "undefined" : tg;
+	ts = (ts === "") ? "undefined" : ts;
+	ftg = (ftg === "") ? "undefined" : ftg;
+	fts = (fts === "") ? "undefined" : fts;
+	var te = document.createElement('script');
+	te.setAttribute("type", "application/javascript");
+	te.textContent = 
+	'var twitch_global = ' + tg + ';' +
+	'var twitch_subscriber = ' + ts + ';' +
+	'var fallback_twitch_global = ' + ftg + ';' +
+	'var fallback_twitch_subscriber = ' + fts + ';';
+	document.body.appendChild(te);
+	document.body.removeChild(te);
+}
+finally {
+}
 
 var te = document.createElement('script');
 te.setAttribute("type", "application/javascript");
-te.textContent = '\
-var twitch_global = ' + tg + ';\
-var twitch_subscriber = ' + ts + ';\
-var bpImgUrls = {\
-	autoScrollOn : "' + GM_getResourceURL("autoScrollOn") + '",\
-	autoScrollOff : "' + GM_getResourceURL("autoScrollOff") + '",\
-	autoFocusOn : "' + GM_getResourceURL("autoFocusOn") + '",\
-	autoFocusOff : "' + GM_getResourceURL("autoFocusOff") + '",\
-	dragOff : "' + GM_getResourceURL("dragOff") + '",\
-	dragOn : "' + GM_getResourceURL("dragOn") + '",\
-	hideDeadOn : "' + GM_getResourceURL("hideDeadOn") + '",\
-	hideDeadOff : "' + GM_getResourceURL("hideDeadOff") + '",\
-};';
+te.textContent = 'var bpImgUrls = {' + 
+	'autoScrollOn : "' + GM_getResourceURL("autoScrollOn") + '",' +
+	'autoScrollOff : "' + GM_getResourceURL("autoScrollOff") + '",' +
+	'autoFocusOn : "' + GM_getResourceURL("autoFocusOn") + '",' +
+	'autoFocusOff : "' + GM_getResourceURL("autoFocusOff") + '",' +
+	'dragOff : "' + GM_getResourceURL("dragOff") + '",' +
+	'dragOn : "' + GM_getResourceURL("dragOn") + '",' +
+	'hideDeadOn : "' + GM_getResourceURL("hideDeadOn") + '",' +
+	'hideDeadOff : "' + GM_getResourceURL("hideDeadOff") + '",' +
+'};';
 document.body.appendChild(te);
 document.body.removeChild(te);
 
@@ -126,6 +164,7 @@ var source = function() {
 						credits1: "Code Monkey",
 						credits2: "Code Amoeba",
 						credits3: "Frenchifier",
+						creditsContextMenu: "Context Menu",
 						creditsAutolinker: "Autolinker",
 						creditsTwitchEmotes: "Twitch Emotes",
 						creditsTextText: "With thanks to the English BombParty community",
@@ -187,6 +226,7 @@ var source = function() {
 						muted: "(muted)",
 						muteUser: "Mute",
 						unmuteUser: "Unmute",
+						areYouSure: "Are you sure?",
 						ignoringText: "Muted Users",
 						ignoringEmpty: "Nobody is currently muted.",
 						scoreName: "Leaderboard score",
@@ -209,7 +249,8 @@ var source = function() {
 							ukFem: "GB Female",
 							fran: "FR",
 						},
-						updateText: "New Update! (2015-03-141592653)<br />Leaderboard Score, experimental text-to-speech in chat, reorganized BpOS tab, various bug fixes.",
+						twitchEmoteError: "Error: Twitch emotes have not been loaded.",
+						updateText: "New Update! (2015-05-17)<br />Right-clicking on a username brings up a menu of actions.<br />New twitch emote format: subscriber emotes are now called using just [emote].",
 					},
 					fr: {
 						timeText: "Temps Écoulé : ",
@@ -238,6 +279,7 @@ var source = function() {
 						credits1: "Code Monkey",
 						credits2: "Code Amoeba",
 						credits3: "Traduction",
+						creditsContextMenu: "Menu Contextuel",
 						creditsAutolinker: "Liens automatiques",
 						creditsTwitchEmotes: "Emoticones Twitch",
 						creditsTextText: "Remerciements à la communauté anglaise de BombParty",
@@ -299,6 +341,7 @@ var source = function() {
 						muted: "(muted)",
 						muteUser: "Ignorer",
 						unmuteUser: "Autoriser",
+						areYouSure: "Êtes-vous sûr ?",
 						ignoringText: "Utilisateurs ignorés",
 						ignoringEmpty: "Personne n'est ignoré actuellement.",
 						scoreName: "Score Classement",
@@ -321,7 +364,8 @@ var source = function() {
 							ukFem: "GB Femme",
 							fran: "FR",
 						},
-						updateText: "Nouvelle mise à jour! (2015-03-141592653)<br />Tableau des scores, reconnaissance vocale dans le chat, réorganisation du BpOS, correction de bugs.",
+						twitchEmoteError: "Erreur : Les émoticones Twitch n'ont pas été chargées.",
+						updateText: "Nouvelle mise à jour ! (17-05-2015)<br/>Cliquer-droit sur un pseudonyme ouvre un menu contextuel comportant plusieurs actions.<br/>Nouveau format d'emoticones Twitch : les emotes subscriber sont désormais appelées en utilisant [emote].",
 					},
 				},
 				language: (document.cookie.indexOf("i18next=fr") !== -1 ? "fr" : "en"),
@@ -417,10 +461,15 @@ var source = function() {
 				//Letter scores based on the formula ((10 - (pure integer value of percentage))*3). floored at 1. Why this formula? Just because. :D 
 				letterScore: { a: 5, b: 25, c: 21, d: 17, e: 1, f: 23, g: 24, h: 12, i: 9, j: 30, k:27, l:18, m:22, n:10, o:7, p:24, q:30, r:12, s:11, t:3, u:22, v:27, w:23, x:30, y:24, z:30},
 				scoreMode: false,
+				
+				is_hidden: false,
 			};
 			
 			// Store all the game images so they can be changed
 			gameImages = {};
+			
+			window.addEventListener("blur", function () { bpOverlay.is_hidden = true; });
+			window.addEventListener("focus", function () { bpOverlay.is_hidden = false; });
 			
 			// So, um, the code here is pretty distributed, but I'll explain the "hack" I've found here
 			// Elisee has *kindly* wrapped up all the images he used in a closure
@@ -1823,66 +1872,6 @@ var source = function() {
 				}
 
 			}
-
-			// Make a context menu.
-			// Unfinished at the current time
-			var createContextMenu = function () {
-			
-				var contextMenu = document.createElement("DIV");
-				contextMenu.id = "bpContextMenu";
-				contextMenu.style.background = "#ffffff";
-				contextMenu.style.border = "1px solid #0000ff";
-				contextMenu.style.display = "none";
-				contextMenu.style.position = "absolute";
-				contextMenu.style.minWidth = "150px";
-				contextMenu.innerHTML = "\
-					<ul id=\"contextList\" style=\"list-style-type: none;\">\
-						<li><button id=\"contextBan\" class=\"contextMenuButton\">Ban </button></li>\
-						<li><button id=\"contextMod\" class=\"contextMenuButton\">Mod </button></li>\
-					</ul>\
-				";
-				
-				document.addEventListener("click", function (e) {
-					console.log(e.button);
-					if (e.button === 0 || e.target.className !== "User") {
-						contextMenu.style.display = "none";
-					}
-				});
-				
-				document.addEventListener("contextmenu", function (e) {
-					if (e.target.className === "User" && e.target.dataset.authId && channel.data.usersByAuthId[e.target.dataset.authId]) {
-						var contextMenuBan = document.getElementById("contextBan");
-						var contextMenuMod = document.getElementById("contextMod");
-						contextMenu.style.display = "";
-						
-						contextMenuBan.textContent = "Ban " + name;
-						contextMenuMod.textContent = "Mod " + name;
-						
-						var x = e.clientX;
-						var y = e.clientY;
-						var width = window.innerWidth - 3;
-						var height = window.innerHeight - 3;
-						if (x + contextMenu.clientWidth > width) {
-							x = width - contextMenu.clientWidth;
-						}
-						if (y + contextMenu.clientHeight > height) {
-							y = height - contextMenu.clientHeight;
-						}
-						
-						contextMenu.style.left = x + "px";
-						contextMenu.style.top = y + "px";
-						
-						var authId = e.target.dataset.authId;
-						var name = channel.data.usersByAuthId[authId].displayName;
-
-						contextMenuBan.dataset.authId = authId;
-						contextMenuMod.dataset.authId = authId;
-						e.preventDefault();
-					}
-				});
-				
-				document.body.appendChild(contextMenu);
-			};
 			
 			//Usage: 	generateSettingsElement(itemText, options, selectId, settingsFunction)
 			//string	'itemText' is the text to the right of the drop down options pane
@@ -1996,44 +1985,85 @@ var source = function() {
 				}
 			}
 
+			// Do a bit of processing on the twitch emotes
+			var twitchEmotes = {};
+			var globalEmotes = {};
+			try {
+				var globalTemplate = twitch_global.template;
+				var subscriberTemplate = twitch_subscriber.template;
+
+				if (!twitch_global.emotes || !twitch_subscriber.channels) {
+					throw Exception();
+				}
+				
+				for (var i in twitch_global.emotes) {
+					if (!twitch_global.emotes[i].image_id) {
+						throw Exception();
+					}
+					globalEmotes[i] = {image_id: twitch_global.emotes[i].image_id};
+				}
+				for (var i in twitch_subscriber.channels) {
+					if (!twitch_subscriber.channels[i].emotes.length) {
+						throw Exception();
+					}
+					for (var j = 0; j < twitch_subscriber.channels[i].emotes.length; j++) {
+						if (!twitch_subscriber.channels[i].emotes[j].code || !twitch_subscriber.channels[i].emotes[j].image_id) {
+							throw Exception();
+						}
+						var code = twitch_subscriber.channels[i].emotes[j].code;
+						twitchEmotes[code] = {image_id: twitch_subscriber.channels[i].emotes[j].image_id, channel: i};
+					}
+				}
+			}
+			catch (e) {
+				try {
+					console.log("twitchemotes.com api v2 loading failed, switching to fallback emotes...");
+					bpOverlay.emoteFallback = true;
+					for (var i in fallback_twitch_global) {
+						globalEmotes[i] = {src: "http:" + fallback_twitch_global[i].url};
+					}
+					for (var i in fallback_twitch_subscriber) {
+						for (var j in fallback_twitch_subscriber[i].emotes) {
+							twitchEmotes[j] = {src: "http:" + fallback_twitch_subscriber[i].emotes[j], channel: i};
+						}
+					}
+				}
+				catch (e) {
+					console.log("Alright, the fallback emotes failed as well. :(");
+					bpOverlay.emoteError = true;
+				}
+			}
+			
 			// It now makes more sense to have the twitch emotes in a separate function
 			var twitchify = function (message) {
-				if (bpOverlay.twitchOn) {
-					if (window.hasOwnProperty("twitch_global")) {
-						for (i in twitch_global) {
-							message = message.replace(new RegExp("\\b" + i + "\\b", "g"), "<img src=\"http:" + twitch_global[i].url + "\" title=\"" + i + "\" style=\"margin-bottom:-6px\"><\/img>");
+				if (bpOverlay.twitchOn && !bpOverlay.emoteError) {
+				
+					for (var i in globalEmotes) {
+						if (!bpOverlay.emoteFallback) {
+							var src = globalTemplate.small.replace("{image_id}", globalEmotes[i].image_id);
 						}
+						else {
+							var src = globalEmotes[i].src;
+						}
+						message = message.replace(new RegExp("\\b" + i + "\\b", "g"), "<img src=\"" + src + "\" alt=\"" + i + "\" title=\"" + i + "\" style=\"vertical-align:-30%\"></img>");
 					}
-					
-					if (window.hasOwnProperty("twitch_subscriber")) {
-						// Match subscriber emote patterns
-						var matches = [];
-						var found;
-						var reg = /\b\w+:\w+\b/g
-						while (found = reg.exec(message)) {
-							matches.push(found[0]);
-						}
-						
-						// Check if any of the patterns we've found are actual emotes
-						toReplace = {};
-						for (i = 0; i < matches.length; i++) {
-							var split = matches[i].split(":");
-							var s = split[0].toLowerCase();
-							var e = split[1];
-							if (!toReplace[matches[i]]) {
-								if (twitch_subscriber[s]) {
-									if (twitch_subscriber[s].emotes[e]) {
-										toReplace[s+":"+e] = twitch_subscriber[s].emotes[e];
-									}
-								}
+				
+					message = message.replace(/\[[^\[\]]*\]/g, function (match) {
+						var code = match.substring(1, match.length - 1);
+						if (twitchEmotes[code]) {
+							if (!bpOverlay.emoteFallback) {
+								var src = (twitchEmotes[code].global ? globalTemplate : subscriberTemplate).small.replace("{image_id}", twitchEmotes[code].image_id);
 							}
+							else {
+								var src = twitchEmotes[code].src;
+							}
+							var title = (twitchEmotes[code].channel ? twitchEmotes[code].channel + " &gt; " : "") + code;
+							return "<img src=\"" + src + "\" alt=\"" + match + "\" title=\"" + title + "\" style=\"vertical-align:-30%\"></img>";
 						}
-						
-						// Finally, do any replacements
-						for (i in toReplace) {
-							message = message.replace(new RegExp(i, "g"), "<img src=\"http:" + toReplace[i] + "\" title=\"" + i + "\" style=\"margin-bottom:-6px\"><\/img>");
+						else {
+							return match;
 						}
-					}
+					});
 					
 				}
 				if (bpOverlay.markupOn) {
@@ -2049,6 +2079,85 @@ var source = function() {
 			// We wrap the default game functions to force them to be called after our custom code.
 			var wrapGameFunctions = function() {
 
+				// Context Menus!
+				jQ(function () {
+					jQ.contextMenu({
+						selector: ".User",
+						items: {
+							"ban": {
+								name: i18n.t("nuclearnode:chat.ban"),
+								className: "contextMenuBanButton",
+								callback: function () {
+									var button = jQ(".contextMenuBanButton")[0];
+									if (button.dataset.state === "1") {
+										channel.socket.emit("banUser", {displayName: channel.data.usersByAuthId[this[0].dataset.authId].displayName, authId: this[0].dataset.authId});
+										return true;
+									}
+									else {
+										button.dataset.state = "1";
+										button.textContent = tran.t("areYouSure");
+										return false;
+									}
+								},
+								disabled: function (key, opt) {
+									return !(this[0].dataset.authId && channel.data.usersByAuthId[this[0].dataset.authId] && ["host", "moderator", "hubAdministrator"].indexOf(app.user.role) >= 0)
+								},
+							},
+							"mod": {
+								name: i18n.t("nuclearnode:chat.mod"),
+								className: "contextMenuModButton",
+								callback: function () {
+									var button = jQ(".contextMenuModButton")[0];
+									if (button.dataset.state === "1") {
+										channel.socket.emit("modUser", {displayName: channel.data.usersByAuthId[this[0].dataset.authId].displayName, authId: this[0].dataset.authId});
+										return true;
+									}
+									else {
+										button.dataset.state = "1";
+										button.textContent = tran.t("areYouSure");
+										return false;
+									}
+								},
+								disabled: function (key, opt) {
+									return !(this[0].dataset.authId && channel.data.usersByAuthId[this[0].dataset.authId] && ["host", "hubAdministrator"].indexOf(app.user.role) >= 0)
+								},
+							},
+							"mute": {
+								name: "Mute",
+								callback: function () {
+									bpOverlay.ignoring[this[0].dataset.authId] = channel.data.usersByAuthId[this[0].dataset.authId].displayName;
+									var toMute = jQ(".Author-" + this[0].dataset.authId.replace(/:/g, "_"));
+									for (var i = 0; i < toMute.length; i++) {
+										toMute[i].style.opacity = .4;
+									}
+									updateMuted();
+									return true;
+								},
+								disabled: function (key, opt) {
+									return !(this[0].dataset.authId && channel.data.usersByAuthId[this[0].dataset.authId])
+								},
+							},
+						}
+					});
+					
+					jQ(document.body).on("contextmenu:blur", ".context-menu-item",
+						function (e) {
+							var contextMenuItems = jQ(".context-menu-item");
+							for (var i = 0; i < contextMenuItems.length; i++) {
+								var item = contextMenuItems[i];
+								if (item.classList.contains("contextMenuBanButton")) {
+									item.dataset.state = "0";
+									item.textContent = i18n.t("nuclearnode:chat.ban");
+								}
+								else if (item.classList.contains("contextMenuModButton")) {
+									item.dataset.state = "0";
+									item.textContent = i18n.t("nuclearnode:chat.mod");
+								}
+							}
+						}
+					);
+				});
+			
 				// A little wrapper thing to make the canvas fill up the gameImages object
 				var ctx = canvasContext;
 				ctx.drawImageRedux = ctx.drawImage; // Do a little wrapping
@@ -2099,7 +2208,7 @@ var source = function() {
 								if ((index = lowercaseText.indexOf(app.user.displayName.toLowerCase())) !== -1) {
 									if ((index === 0 || lowercaseText[index-1].search(/\W/) !== -1) &&
 										(index + app.user.displayName.length >= lowercaseText.length || lowercaseText[index + app.user.displayName.length].search(/\W/) !== -1)) {
-										if (document.hidden) {
+										if (bpOverlay.is_hidden) {
 											bpOverlay.notificationSound.play();
 										}
 										notified = true;
@@ -2111,7 +2220,7 @@ var source = function() {
 										if ((index = lowercaseText.indexOf(bpOverlay.alias[i])) !== -1) {
 											if ((index === 0 || lowercaseText[index-1].search(/\W/) !== -1) &&
 												(index + bpOverlay.alias[i].length >= lowercaseText.length || lowercaseText[index + bpOverlay.alias[i].length].search(/\W/) !== -1)) {
-												if (document.hidden) {
+												if (bpOverlay.is_hidden) {
 													bpOverlay.notificationSound.play();
 												}
 												notified = true;
@@ -2184,13 +2293,6 @@ var source = function() {
 				}
 				// Those buttons are being rid of so we don't accidentally ban people when trying to chat
 				// A list of people that you can ban will be provided
-				
-				// Context menus!
-				document.body.addEventListener("contextmenu", function (e) {
-					if (e.target.className === "User" && e.target.dataset.authId) {
-						e.preventDefault();
-					}
-				});
 			
 				// Chat message wrapper
 				var gameChat = channel.appendToChat;
@@ -2244,6 +2346,11 @@ var source = function() {
 							bpOverlay.adventureFirstRun=true;
 						}
 
+						// Hide the context menu if it is the user's turn
+						if (channel.data.actors[actor].authId === window.app.user.authId) {
+							jQ('#context-menu-layer').trigger('mousedown');
+						}
+						
 						//invisible break
 						sendAdventureMessage("break", "rgb(20,20,20");
 												
@@ -2310,7 +2417,10 @@ var source = function() {
 								// If focusNext is true (i.e. it's immediately after the player's turn)
 								// We set the focus to the chatbox, and reset focusNext.
 								setTimeout(function() {
-									document.getElementById("ChatInputBox").focus();
+									// We set focus to the chat only if the user is not the current player
+									if (channel.data.actors[channel.data.activePlayerIndex].authId !== app.user.authId) {
+										document.getElementById("ChatInputBox").focus();
+									}
 								}, 400);
 								bpOverlay.focusNext = false;
 							
@@ -2618,7 +2728,7 @@ var source = function() {
 						}
 
 						// Play the notification sound if specified
-						if (bpOverlay.endGameNotification && document.hidden) {
+						if (bpOverlay.endGameNotification && bpOverlay.is_hidden) {
 							bpOverlay.notificationSound.play();
 						}
 						
@@ -2687,7 +2797,7 @@ var source = function() {
 									}
 								}
 						})
-						 .call(this), a.push("<span" + jade.attr("title", l.join(", "), !0, !1) + ' class="User">'), "" != e.role && a.push("<span" + jade.attr("title", n.t("nuclearnode:userRoles." + e.role), !0, !1) + jade.cls(["UserRole_" + e.role], [!0]) + "></span> "), a.push(jade.escape(null == (t = e.displayName) ? "" : t)), a.push('<span class="Actions">'), ("moderator" == r.user.role || "host" == r.user.role || "hubAdministrator" == r.user.role) && (a.push('<button' + jade.attr("data-auth-id", e.authId, !0, !1) + jade.attr("data-display-name", e.displayName, !0, !1) + ' class="BanUser">' + jade.escape(null == (t = n.t("nuclearnode:chat.ban")) ? "" : t) + "</button>"), ("host" == r.user.role || "hubAdministrator" == r.user.role) && a.push("<button" + jade.attr("data-auth-id", e.authId, !0, !1) + jade.attr("data-display-name", e.displayName, !0, !1) + ' class="ModUser">' + jade.escape(null == (t = n.t("nuclearnode:chat.mod")) ? "" : t) + "</button>")), a.push("<button" + jade.attr("data-auth-id", e.authId, !0, !1) + jade.attr("data-display-name", e.displayName, !0, !1) + ' class="MuteUser">' + tran.t("muteUser") + "</button>"), a.push("</span>"), a.push("</span>")
+						 .call(this), a.push("<span" + jade.attr("title", l.join(", "), !0, !1) + ' class="BpOS-User">'), "" != e.role && a.push("<span" + jade.attr("title", n.t("nuclearnode:userRoles." + e.role), !0, !1) + jade.cls(["UserRole_" + e.role], [!0]) + "></span> "), a.push(jade.escape(null == (t = e.displayName) ? "" : t)), a.push('<span class="Actions">'), ("moderator" == r.user.role || "host" == r.user.role || "hubAdministrator" == r.user.role) && (a.push('<button' + jade.attr("data-auth-id", e.authId, !0, !1) + jade.attr("data-display-name", e.displayName, !0, !1) + ' class="BanUser">' + jade.escape(null == (t = n.t("nuclearnode:chat.ban")) ? "" : t) + "</button>"), ("host" == r.user.role || "hubAdministrator" == r.user.role) && a.push("<button" + jade.attr("data-auth-id", e.authId, !0, !1) + jade.attr("data-display-name", e.displayName, !0, !1) + ' class="ModUser">' + jade.escape(null == (t = n.t("nuclearnode:chat.mod")) ? "" : t) + "</button>")), a.push("<button" + jade.attr("data-auth-id", e.authId, !0, !1) + jade.attr("data-display-name", e.displayName, !0, !1) + ' class="MuteUser">' + tran.t("muteUser") + "</button>"), a.push("</span>"), a.push("</span>")
 						
 						PDIH += a.join("");
 						PDIH += "<br />";
@@ -2758,7 +2868,7 @@ var source = function() {
 				// Probably a better way of doing this
 				// Lol. TFW web-console css is hard
 				var style = document.createElement('style');
-				style.appendChild(document.createTextNode('.headerButtonDiv {  display: -webkit-box;  display: -moz-box;  display: -webkit-flex;  display: -ms-flexbox;  display: box;  display: flex;  opacity: 0.3;  -ms-filter: "progid:DXImageTransform.Microsoft.Alpha(Opacity=30)";  filter: alpha(opacity=30);} .headerButtonDiv:hover {  opacity: 1;  -ms-filter: none;  filter: none;} button.headerButton {  border: none;  background: none;  cursor: pointer;  opacity: 0.5;  -ms-filter: "progid:DXImageTransform.Microsoft.Alpha(Opacity=50)";  filter: alpha(opacity=50);  display: -webkit-box;  display: -moz-box;  display: -webkit-flex;  display: -ms-flexbox;  display: box;  display: flex;} button.headerButton:hover {  opacity: 0.8;  -ms-filter: "progid:DXImageTransform.Microsoft.Alpha(Opacity=80)";  filter: alpha(opacity=80);} button.headerButton:active {  opacity: 1;  -ms-filter: none;  filter: none;} .infoTableDiv::-webkit-scrollbar { width: 15px; height: 15px; } .infoTableDiv::-webkit-scrollbar-button { height: 0px; width: 0px; } .infoTableDiv::-webkit-scrollbar-track { background-color: rgba(0,0,0,0.05); } .infoTableDiv::-webkit-scrollbar-thumb { background-color: rgba(255,255,255,0.1); border: 3px solid transparent; -webkit-border-radius: 6px; border-radius: 6px; -webkit-background-clip: content; -moz-background-clip: content; background-clip: content-box; } .infoTableDiv::-webkit-scrollbar-thumb:hover { background-color: rgba(255,255,255,0.15); } .infoTableDiv::-webkit-scrollbar-corner { background-color: rgba(255,255,255,0.1); }#overlaySettingsTab{text-align:left;overflow-y:auto}#overlaySettingsTab h2{padding:.5em .5em 0;opacity:.5;-ms-filter:"alpha(Opacity=50)";filter:alpha(opacity=50)}#overlaySettingsTab h3{padding:.5em .5em 0;opacity:.5;-ms-filter:"alpha(Opacity=50)";filter:alpha(opacity=50)}#overlaySettingsTab table{width:100%;padding:.5em}#overlaySettingsTab table tr td:nth-child(1){width:40%}#overlaySettingsTab table tr td:nth-child(2){width:60%}#overlaySettingsTab table button:not(.UnbanUser),#overlaySettingsTab table input,#overlaySettingsTab table select,#overlaySettingsTab table textarea{width:100%;background:#444;border:none;padding:.25em;color:#fff;font:inherit}#overlaySettingsTab table textarea{resize:vertical;min-height:3em}#overlaySettingsTab table ul{list-style:none}#overlaySettingsTab .User .UserRole_hubAdministrator:before{content:\'[★]\';cursor:default;color:#c63}#overlaySettingsTab .User .UserRole_host:before{content:\'★\';cursor:default;color:#dc8}#overlaySettingsTab .User .UserRole_administrator:before{content:\'☆\';cursor:default;color:#dc8}#overlaySettingsTab .User .UserRole_moderator:before{content:\'●\';cursor:default;color:#346192}#overlaySettingsTab .Actions button{border:none;background:0 0;cursor:pointer;margin:0 .25em;outline:0;font-weight:400;font-size:smaller;opacity:.8;-ms-filter:"alpha(Opacity=80)";filter:alpha(opacity=80)}#overlaySettingsTab .Actions button.BanUser{color:#a00}#overlaySettingsTab .Actions button.ModUser,#overlaySettingsTab .Actions button.UnmodUser{color:#2a3} .Actions button.MuteUser{color:#ddd} .Actions button.UnmuteUser{color:#eee} #overlaySettingsTab .Actions button:hover{opacity:1;-ms-filter:none;filter:none}#overlaySettingsTab .Actions button:active{background:rgba(255,0,0,.2)}#overlaySettingsTab input{-moz-user-select:text;-webkit-user-select:text;-ms-user-select:text}#ChatLog .highlighted{background: rgba(255, 0, 0, 0.05);}#ChatLog .highlighted:hover {background: rgba(255, 0, 0, 0.1);}#bpContextMenu {background:#ffffff;position:absolute;min-width:150px;border:1px solid #0000ff}#contextList {list-style-type:none;padding:-2px 0px 0px 0px;margin:0;}.contextMenuButton {text-align:left;width:100%;background:#ffffff;border:none;whitespace:no-wrap;}.contextMenuButton:hover {background:#aeaeff;}'));
+				style.appendChild(document.createTextNode('.headerButtonDiv {  display: -webkit-box;  display: -moz-box;  display: -webkit-flex;  display: -ms-flexbox;  display: box;  display: flex;  opacity: 0.3;  -ms-filter: "progid:DXImageTransform.Microsoft.Alpha(Opacity=30)";  filter: alpha(opacity=30);} .headerButtonDiv:hover {  opacity: 1;  -ms-filter: none;  filter: none;} button.headerButton {  border: none;  background: none;  cursor: pointer;  opacity: 0.5;  -ms-filter: "progid:DXImageTransform.Microsoft.Alpha(Opacity=50)";  filter: alpha(opacity=50);  display: -webkit-box;  display: -moz-box;  display: -webkit-flex;  display: -ms-flexbox;  display: box;  display: flex;} button.headerButton:hover {  opacity: 0.8;  -ms-filter: "progid:DXImageTransform.Microsoft.Alpha(Opacity=80)";  filter: alpha(opacity=80);} button.headerButton:active {  opacity: 1;  -ms-filter: none;  filter: none;} .infoTableDiv::-webkit-scrollbar { width: 15px; height: 15px; } .infoTableDiv::-webkit-scrollbar-button { height: 0px; width: 0px; } .infoTableDiv::-webkit-scrollbar-track { background-color: rgba(0,0,0,0.05); } .infoTableDiv::-webkit-scrollbar-thumb { background-color: rgba(255,255,255,0.1); border: 3px solid transparent; -webkit-border-radius: 6px; border-radius: 6px; -webkit-background-clip: content; -moz-background-clip: content; background-clip: content-box; } .infoTableDiv::-webkit-scrollbar-thumb:hover { background-color: rgba(255,255,255,0.15); } .infoTableDiv::-webkit-scrollbar-corner { background-color: rgba(255,255,255,0.1); }#overlaySettingsTab{text-align:left;overflow-y:auto}#overlaySettingsTab h2{padding:.5em .5em 0;opacity:.5;-ms-filter:"alpha(Opacity=50)";filter:alpha(opacity=50)}#overlaySettingsTab h3{padding:.5em .5em 0;opacity:.5;-ms-filter:"alpha(Opacity=50)";filter:alpha(opacity=50)}#overlaySettingsTab table{width:100%;padding:.5em}#overlaySettingsTab table tr td:nth-child(1){width:40%}#overlaySettingsTab table tr td:nth-child(2){width:60%}#overlaySettingsTab table button:not(.UnbanUser),#overlaySettingsTab table input,#overlaySettingsTab table select,#overlaySettingsTab table textarea{width:100%;background:#444;border:none;padding:.25em;color:#fff;font:inherit}#overlaySettingsTab table textarea{resize:vertical;min-height:3em}#overlaySettingsTab table ul{list-style:none}#overlaySettingsTab .BpOS-User .UserRole_hubAdministrator:before{content:\'[★]\';cursor:default;color:#c63}#overlaySettingsTab .BpOS-User .UserRole_host:before{content:\'★\';cursor:default;color:#dc8}#overlaySettingsTab .BpOS-User .UserRole_administrator:before{content:\'☆\';cursor:default;color:#dc8}#overlaySettingsTab .BpOS-User .UserRole_moderator:before{content:\'●\';cursor:default;color:#346192}#overlaySettingsTab .Actions button{border:none;background:0 0;cursor:pointer;margin:0 .25em;outline:0;font-weight:400;font-size:smaller;opacity:.8;-ms-filter:"alpha(Opacity=80)";filter:alpha(opacity=80)}#overlaySettingsTab .Actions button.BanUser{color:#a00}#overlaySettingsTab .Actions button.ModUser,#overlaySettingsTab .Actions button.UnmodUser{color:#2a3} .Actions button.MuteUser{color:#ddd} .Actions button.UnmuteUser{color:#eee} #overlaySettingsTab .Actions button:hover{opacity:1;-ms-filter:none;filter:none}#overlaySettingsTab .Actions button:active{background:rgba(255,0,0,.2)}#overlaySettingsTab input{-moz-user-select:text;-webkit-user-select:text;-ms-user-select:text}#ChatLog .highlighted{background: rgba(255, 0, 0, 0.05);}#ChatLog .highlighted:hover {background: rgba(255, 0, 0, 0.1);}'));
 				document.getElementsByTagName('head')[0].appendChild(style);
 				
 				// Load the hideDead on/off images
@@ -2893,9 +3003,6 @@ var source = function() {
 					}
 				);
 				
-				// Make the context menu.
-				// Temporarily disabled.
-				//createContextMenu();
 				
 				//Add the fourth button on the settingsTab that hopefully doesn't interfere with the others.
 				var sideButtons = document.getElementById("SidebarTabButtons");
@@ -3163,7 +3270,8 @@ var source = function() {
 				<tr><td>" + tran.t("credits2") + "</td><td>Skandalabrandur</td></tr>\
 				<tr><td>" + tran.t("credits3") + "</td><td>Sanc</td></tr>\
 				<tr><td>" + tran.t("creditsAutolinker") + "</td><td><a href=\"https://github.com/gregjacobs/Autolinker.js\">Autolinker.js</a></td></tr>\
-				<tr><td>" + tran.t("creditsTwitchEmotes") + "</td><td><a href=\"http://twitchemotes.com/\">twitchemotes.com</a></td></tr>";
+				<tr><td>" + tran.t("creditsTwitchEmotes") + "</td><td><a href=\"http://twitchemotes.com/\">twitchemotes.com</a></td></tr>\
+				<tr><td>" + tran.t("creditsContextMenu") + "</td><td><a href=\"http://medialize.github.io/jQuery-contextMenu/\">Medialize</a></td></tr>";
 				creditsTableWrapper.appendChild(creditsTable);				
 				settingsTab.appendChild(creditsTableWrapper);
 				
@@ -3618,6 +3726,10 @@ var source = function() {
 
 			// "Update Text"
 			channel.appendToChat("Info", tran.t("updateText"));
+			
+			if (bpOverlay.emoteError) {
+				channel.appendToChat("Info", tran.t("twitchEmoteError"));
+			}
 		}
 		main();
 	}
@@ -3887,11 +3999,6 @@ var validateThemeObj = function (themeObj) {
 	
 	return valid;
 };
-
-// JSON Parser, by Douglas Crockford
-// This is necessary because in this environment I don't have access to the JSON object
-var json_parse=function(){"use strict";var e,t,n={'"':'"',"\\":"\\","/":"/",b:"\b",f:"\f",n:"\n",r:"\r",t:"	"},r,i=function(t){throw{name:"SyntaxError",message:t,at:e,text:r}},s=function(n){if(n&&n!==t){i("Expected '"+n+"' instead of '"+t+"'")}t=r.charAt(e);e+=1;return t},o=function(){var e,n="";if(t==="-"){n="-";s("-")}while(t>="0"&&t<="9"){n+=t;s()}if(t==="."){n+=".";while(s()&&t>="0"&&t<="9"){n+=t}}if(t==="e"||t==="E"){n+=t;s();if(t==="-"||t==="+"){n+=t;s()}while(t>="0"&&t<="9"){n+=t;s()}}e=+n;if(!isFinite(e)){i("Bad number")}else{return e}},u=function(){var e,r,o="",u;if(t==='"'){while(s()){if(t==='"'){s();return o}if(t==="\\"){s();if(t==="u"){u=0;for(r=0;r<4;r+=1){e=parseInt(s(),16);if(!isFinite(e)){break}u=u*16+e}o+=String.fromCharCode(u)}else if(typeof n[t]==="string"){o+=n[t]}else{break}}else{o+=t}}}i("Bad string")},a=function(){while(t&&t<=" "){s()}},f=function(){switch(t){case"t":s("t");s("r");s("u");s("e");return true;case"f":s("f");s("a");s("l");s("s");s("e");return false;case"n":s("n");s("u");s("l");s("l");return null}i("Unexpected '"+t+"'")},l,c=function(){var e=[];if(t==="["){s("[");a();if(t==="]"){s("]");return e}while(t){e.push(l());a();if(t==="]"){s("]");return e}s(",");a()}}i("Bad array")},h=function(){var e,n={};if(t==="{"){s("{");a();if(t==="}"){s("}");return n}while(t){e=u();a();s(":");if(Object.hasOwnProperty.call(n,e)){i('Duplicate key "'+e+'"')}n[e]=l();a();if(t==="}"){s("}");return n}s(",");a()}}i("Bad object")};l=function(){a();switch(t){case"{":return h();case"[":return c();case'"':return u();case"-":return o();default:return t>="0"&&t<="9"?o():f()}};return function(n,s){var o;r=n;e=0;t=" ";o=l();a();if(t){i("Syntax error")}return typeof s==="function"?function u(e,t){var n,r,i=e[t];if(i&&typeof i==="object"){for(n in i){if(Object.prototype.hasOwnProperty.call(i,n)){r=u(i,n);if(r!==undefined){i[n]=r}else{delete i[n]}}}}return s.call(e,t,i)}({"":o},""):o}}()
-// I'm sorry for introducing more foreign code, but I've decided to stand strong against jQuery
 
 var loadAndApplyTheme = function (url) {
 	GM_xmlhttpRequest({
