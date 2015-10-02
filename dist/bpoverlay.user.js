@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         BombParty Overlay
-// @version      1.6.1
+// @version      1.6.2
 // @description  Overlay + Utilities for BombParty!
 // @icon         https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/dist/icon.png
 // @icon64       https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/dist/icon64.png
@@ -11,6 +11,7 @@
 // @resource     twitch_subscriber http://twitchemotes.com/api_cache/v2/subscriber.json
 // @resource     fallback_twitch_global http://twitchemotes.com/global.json
 // @resource     fallback_twitch_subscriber http://twitchemotes.com/subscriber.json
+// @resource     ffz_emotes http://api.frankerfacez.com/v1/set/global
 // @resource     autoScrollOn https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/dist/chatdown.png
 // @resource     autoScrollOff https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/dist/chatdownoff.png
 // @resource     autoFocusOn https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/dist/focusOn.png
@@ -68,21 +69,25 @@ try{
 	var ts = GM_getResourceText("twitch_subscriber");
 	var ftg = GM_getResourceText("fallback_twitch_global");
 	var fts = GM_getResourceText("fallback_twitch_subscriber");
+	var ffz = GM_getResourceText("ffz_emotes");
 	json_parse(tg);
 	json_parse(ts);
 	json_parse(ftg);
 	json_parse(fts);
+	json_parse(ffz);
 	tg = (tg === "") ? "undefined" : tg;
 	ts = (ts === "") ? "undefined" : ts;
 	ftg = (ftg === "") ? "undefined" : ftg;
 	fts = (fts === "") ? "undefined" : fts;
+	ffz = (ffz === "") ? "undefined" : ffz;
 	var te = document.createElement('script');
 	te.setAttribute("type", "application/javascript");
 	te.textContent = 
 	'var twitch_global = ' + tg + ';' +
 	'var twitch_subscriber = ' + ts + ';' +
 	'var fallback_twitch_global = ' + ftg + ';' +
-	'var fallback_twitch_subscriber = ' + fts + ';';
+	'var fallback_twitch_subscriber = ' + fts + ';' +
+	'var ffz_emotes = ' + ffz + ';';
 	document.body.appendChild(te);
 	document.body.removeChild(te);
 }
@@ -1987,7 +1992,10 @@ var source = function() {
 
 			// Do a bit of processing on the twitch emotes
 			var twitchEmotes = {};
-			var globalEmotes = {};
+			globalEmotes = {};
+			
+			// I'm gonna add the FrankerFaceZ emotes to the global emotes too
+			
 			try {
 				var globalTemplate = twitch_global.template;
 				var subscriberTemplate = twitch_subscriber.template;
@@ -2002,6 +2010,7 @@ var source = function() {
 					}
 					globalEmotes[i] = {image_id: twitch_global.emotes[i].image_id};
 				}
+				
 				for (var i in twitch_subscriber.channels) {
 					if (!twitch_subscriber.channels[i].emotes.length) {
 						throw Exception();
@@ -2034,12 +2043,32 @@ var source = function() {
 				}
 			}
 			
+			try {
+				// FFZ emotes
+				for (var i in ffz_emotes.sets) {
+					var set = ffz_emotes.sets[i];
+					
+					for (var j = 0; j < set.emoticons.length; j++) {
+						var emoticon = set.emoticons[j];
+						
+						if (!emoticon.urls[1]) {
+							console.log("Error processing FFZ emote " + emoticon.name);
+						}
+						
+						globalEmotes[emoticon.name] = {src: emoticon.urls[1]};
+					}
+				}
+			}
+			catch (e) {
+				console.log("FrankerFaceZ emotes loading failed, hopefully the other emotes are still fine...");
+			}
+			
 			// It now makes more sense to have the twitch emotes in a separate function
 			var twitchify = function (message) {
 				if (bpOverlay.twitchOn && !bpOverlay.emoteError) {
 				
 					for (var i in globalEmotes) {
-						if (!bpOverlay.emoteFallback) {
+						if (!bpOverlay.emoteFallback && !globalEmotes[i].src) {
 							var src = globalTemplate.small.replace("{image_id}", globalEmotes[i].image_id);
 						}
 						else {
