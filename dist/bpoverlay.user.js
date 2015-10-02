@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         BombParty Overlay
-// @version      1.6.0
+// @version      1.6.1
 // @description  Overlay + Utilities for BombParty!
 // @icon         https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/dist/icon.png
 // @icon64       https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/dist/icon64.png
@@ -3330,7 +3330,7 @@ var source = function() {
 							bpOverlay.twitchOn = true;
 						}
 						else if (teSelect.value === "off") {
-							bpOverlay.twitchOff = false;
+							bpOverlay.twitchOn = false;
 						}
 						else {
 						}
