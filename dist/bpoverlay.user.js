@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         BombParty Overlay
-// @version      1.6.2
+// @version      1.6.3
 // @description  Overlay + Utilities for BombParty!
 // @icon         https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/dist/icon.png
 // @icon64       https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/dist/icon64.png
@@ -9,8 +9,6 @@
 // @match        http://bombparty.sparklinlabs.com/play/*
 // @resource     twitch_global http://twitchemotes.com/api_cache/v2/global.json
 // @resource     twitch_subscriber http://twitchemotes.com/api_cache/v2/subscriber.json
-// @resource     fallback_twitch_global http://twitchemotes.com/global.json
-// @resource     fallback_twitch_subscriber http://twitchemotes.com/subscriber.json
 // @resource     ffz_emotes http://api.frankerfacez.com/v1/set/global
 // @resource     autoScrollOn https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/dist/chatdown.png
 // @resource     autoScrollOff https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/dist/chatdownoff.png
@@ -67,8 +65,6 @@ try{
 	// Grab the twitch emotes
 	var tg = GM_getResourceText("twitch_global");
 	var ts = GM_getResourceText("twitch_subscriber");
-	var ftg = GM_getResourceText("fallback_twitch_global");
-	var fts = GM_getResourceText("fallback_twitch_subscriber");
 	var ffz = GM_getResourceText("ffz_emotes");
 	json_parse(tg);
 	json_parse(ts);
@@ -85,8 +81,6 @@ try{
 	te.textContent = 
 	'var twitch_global = ' + tg + ';' +
 	'var twitch_subscriber = ' + ts + ';' +
-	'var fallback_twitch_global = ' + ftg + ';' +
-	'var fallback_twitch_subscriber = ' + fts + ';' +
 	'var ffz_emotes = ' + ffz + ';';
 	document.body.appendChild(te);
 	document.body.removeChild(te);
