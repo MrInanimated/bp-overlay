@@ -68,13 +68,9 @@ try{
 	var ffz = GM_getResourceText("ffz_emotes");
 	json_parse(tg);
 	json_parse(ts);
-	json_parse(ftg);
-	json_parse(fts);
 	json_parse(ffz);
 	tg = (tg === "") ? "undefined" : tg;
 	ts = (ts === "") ? "undefined" : ts;
-	ftg = (ftg === "") ? "undefined" : ftg;
-	fts = (fts === "") ? "undefined" : fts;
 	ffz = (ffz === "") ? "undefined" : ffz;
 	var te = document.createElement('script');
 	te.setAttribute("type", "application/javascript");
@@ -2019,22 +2015,8 @@ var source = function() {
 				}
 			}
 			catch (e) {
-				try {
-					console.log("twitchemotes.com api v2 loading failed, switching to fallback emotes...");
-					bpOverlay.emoteFallback = true;
-					for (var i in fallback_twitch_global) {
-						globalEmotes[i] = {src: "http:" + fallback_twitch_global[i].url};
-					}
-					for (var i in fallback_twitch_subscriber) {
-						for (var j in fallback_twitch_subscriber[i].emotes) {
-							twitchEmotes[j] = {src: "http:" + fallback_twitch_subscriber[i].emotes[j], channel: i};
-						}
-					}
-				}
-				catch (e) {
-					console.log("Alright, the fallback emotes failed as well. :(");
-					bpOverlay.emoteError = true;
-				}
+                console.log("twitchemotes.com api v2 loading failed :(");
+                bpOverlay.emoteError = true;
 			}
 			
 			try {
