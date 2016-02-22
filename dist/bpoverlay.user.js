@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         BombParty Overlay
-// @version      1.6.3
+// @version      1.6.4
 // @description  Overlay + Utilities for BombParty!
 // @icon         https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/dist/icon.png
 // @icon64       https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/dist/icon64.png
@@ -245,7 +245,7 @@ var source = function() {
 							fran: "FR",
 						},
 						twitchEmoteError: "Error: Twitch emotes have not been loaded.",
-						updateText: "New Update! (2015-05-17)<br />Right-clicking on a username brings up a menu of actions.<br />New twitch emote format: subscriber emotes are now called using just [emote].",
+						updateText: "BP Overlay v1.6.4  \nAdded markdown-style formatting for chat messages. Try \\_italics\\_ or \\*italics\\*, \\*\\*bold\\*\\*, \\_\\_underline\\_\\_, \\~\\~strikethrough\\~\\~ or \\`monospace\\`. If you don't want to use markdown, put a backslash in front of your symbols to escape them, like \\\\\\_this\\\\\\_.",
 					},
 					fr: {
 						timeText: "Temps Écoulé : ",
@@ -360,7 +360,7 @@ var source = function() {
 							fran: "FR",
 						},
 						twitchEmoteError: "Erreur : Les émoticones Twitch n'ont pas été chargées.",
-						updateText: "Nouvelle mise à jour ! (17-05-2015)<br/>Cliquer-droit sur un pseudonyme ouvre un menu contextuel comportant plusieurs actions.<br/>Nouveau format d'emoticones Twitch : les emotes subscriber sont désormais appelées en utilisant [emote].",
+						updateText: "BP Overlay v1.6.4  \nAjout d'un nouveau style de mise en forme de message semblable au Markdown. Essayez \\_italique\\_ ou \\*italique\\*, \\*\\*gras\\*\\*, \\_\\_souligné\\_\\_, \\~\\~barré\\~\\~ ou \\`monospace\\`. Si vous ne voulez pas utiliser le Markdown, insérez une barre oblique pour ignorer la mise en forme. Exemple : \\\\\\_Exemple\\\\\\_",
 					},
 				},
 				language: (document.cookie.indexOf("i18next=fr") !== -1 ? "fr" : "en"),
@@ -2080,6 +2080,106 @@ var source = function() {
 				return message;
 			};
 			
+            // Inline custom markdown support
+            var inline = {
+                escape: /^\\([\\`*{}\[\]()#+\-.!_>~])/,
+                tag: /^<!--[\s\S]*?-->|^<\/?\w+(?:"[^"]*"|'[^']*'|[^'">])*?>/,
+                strong: /^\*\*([\s\S]+?)\*\*(?!\*)/,
+                underline: /^__([\s\S]+?)__(?!_)/,
+                del: /^~~([\s\S]+?)~~(?!~)/,
+                em: /^\b_((?:[^_]|__)+?)_\b|^\*((?:\*\*|[\s\S])+?)\*(?!\*)/,
+                code: /^(`+)\s*([\s\S]*?[^`])\s*\1(?!`)/,
+                br: /^ {2,}\n(?!\s*$)/,
+                text: /^[\s\S]+?(?=[\\<!\[_*`~]| {2,}\n|$)/
+            };
+
+            var inlineLex = function (src) {
+                var out = "";
+                
+                while (src) {
+                    // escape
+                    if (cap = inline.escape.exec(src)) {
+                        src = src.substring(cap[0].length);
+                        out += cap[1];
+                        continue;
+                    }
+                    
+                    // tag
+                    if (cap = inline.tag.exec(src)) {
+                        // Leave it alone
+                        src = src.substring(cap[0].length);
+                        out += cap[0];
+                        continue;
+                    }
+                    
+                    // strong
+                    if (cap = inline.strong.exec(src)) {
+                        src = src.substring(cap[0].length);
+                        out += "<strong>" + inlineLex(cap[2] || cap[1]) + "</strong>";
+                        continue;
+                    }
+                    
+                    // underline
+                    if (cap = inline.underline.exec(src)) {
+                        src = src.substring(cap[0].length);
+                        // Fuck it, just going to use inline styles
+                        out += "<span style=\"text-decoration: underline\">" + inlineLex(cap[2] || cap[1]) + "</span>";
+                        continue;
+                    }
+                    
+                    // em
+                    if (cap = inline.em.exec(src)) {
+                        src = src.substring(cap[0].length);
+                        out += "<em>" + inlineLex(cap[2] || cap[1]) + "</em>";
+                        continue;
+                    }
+                    
+                    // del
+                    if (cap = inline.del.exec(src)) {
+                        src = src.substring(cap[0].length);
+                        out += "<del>" + inlineLex(cap[1]) + "</del>";
+                        continue;
+                    }
+                    
+                    // code
+                    if (cap = inline.code.exec(src)) {
+                        src = src.substring(cap[0].length);
+                        out += "<code>" + inlineLex(cap[2] || cap[1]) + "</code>";
+                        continue;
+                    }
+                    
+                    // br
+                    if (cap = inline.br.exec(src)) {
+                        src = src.substring(cap[0].length);
+                        out += "<br>";
+                        continue;
+                    }
+                    
+                    // text
+                    if (cap = inline.text.exec(src)) {
+                        src = src.substring(cap[0].length);
+                        out += cap[0];
+                        continue;
+                    }
+                    
+                    if (src) {
+                        throw new Error("Infinite loop starting at: " + src);
+                    }
+                }
+                
+                return out;
+            };
+            
+            var markdown = function (message) {
+                try {
+                    return inlineLex(message);
+                }
+                catch (e) {
+                    console.log("An error occured whilst parsing markdown:\n" + e.message);
+                    return message;
+                }
+            };
+            
 			// Since a lot of the functions the bot needs to do has to happen before the game updates the state of everything
 			// We wrap the default game functions to force them to be called after our custom code.
 			var wrapGameFunctions = function() {
@@ -2259,7 +2359,7 @@ var source = function() {
 						a.push(
 							(null == (t = e) ? "" : t) +
 							':  <span class="Content">' +
-							twitchify(jade.escape(null == (t = n) ? "" : t)) +  // This function is literally the exact same as before except for this line
+							markdown(twitchify(jade.escape(null == (t = n) ? "" : t))) +  // This function is literally the exact same as before except for this line
 							"</span>")
 					}.call(this, "author" in n ? n.author : "undefined" != typeof author ? author : void 0, "text" in n ? n.text : "undefined" != typeof text ? text : void 0), a.join("")
 				};
@@ -2314,8 +2414,11 @@ var source = function() {
 						// This is needed
 						if (header === "Info" && message.indexOf("class=\"User\"") === -1) {
 							message = twitchify(message);
+                            
+                            // Pass the message through the markdown thingy
+                            message = markdown(message);
 						}
-						
+                        
 						// Scroll the chat down.
 						if (bpOverlay.autoScroll) {
 							var chatLog = document.getElementById("ChatLog");
@@ -2326,7 +2429,7 @@ var source = function() {
 						gameChat(header, message);
 					}
 				};
-
+                
 				// setActivePlayerIndex wrapper
 				var gameSetActivePlayerIndex = channel.socket.listeners("setActivePlayerIndex").shift();
 				channel.socket.on("setActivePlayerIndex", function(actor) {
