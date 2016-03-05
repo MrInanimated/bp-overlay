@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         BombParty Overlay
-// @version      1.6.4
+// @version      1.6.5
 // @description  Overlay + Utilities for BombParty!
 // @icon         https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/dist/icon.png
 // @icon64       https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/dist/icon64.png
@@ -2086,8 +2086,8 @@ var source = function() {
                 tag: /^<!--[\s\S]*?-->|^<\/?\w+(?:"[^"]*"|'[^']*'|[^'">])*?>/,
                 strong: /^\*\*([\s\S]+?)\*\*(?!\*)/,
                 underline: /^__([\s\S]+?)__(?!_)/,
-                del: /^~~([\s\S]+?)~~(?!~)/,
-                em: /^\b_((?:[^_]|__)+?)_\b|^\*((?:\*\*|[\s\S])+?)\*(?!\*)/,
+                del: /^~~(?=\S)([\s\S]*?\S)~~/,
+                em: /^\b_((?:__|[\s\S])+?)_\b|^\*(?=\S)((?:\*\*|\s+[^\*\s]|[^\s\*])*?[^\s\*])\*(?!\*)/,
                 code: /^(`+)\s*([\s\S]*?[^`])\s*\1(?!`)/,
                 br: /^ {2,}\n(?!\s*$)/,
                 text: /^[\s\S]+?(?=[\\<!\[_*`~]| {2,}\n|$)/
