@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         BombParty Overlay
-// @version      1.6.6
+// @version      1.6.7
 // @description  Overlay + Utilities for BombParty!
 // @icon         https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/dist/icon.png
 // @icon64       https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/dist/icon64.png
@@ -145,6 +145,8 @@ var source = function() {
 						playersTitle: "Players:",
 						alphaText: "Alpha",
 						alphaTitle: "Which letter this player is on if he was playing alpha roulette. (The number is how many times they have completed the alphabet)",
+                        wordsText: "Words",
+                        wordsTitle: "How many words this player has used",
 						chatDownButtonTitle: "Automatically scroll the chat down whenever there is a new message.",
 						autoFocusButtonTitle: "Automatically focus the chat box after your turn.",
 						dragButtonTitle: "Have the scoreboard be in a draggable container instead.",
@@ -245,7 +247,7 @@ var source = function() {
 							fran: "FR",
 						},
 						twitchEmoteError: "Error: Twitch emotes have not been loaded.",
-						updateText: "BP Overlay v1.6.4  \nAdded markdown-style formatting for chat messages. Try \\_italics\\_ or \\*italics\\*, \\*\\*bold\\*\\*, \\_\\_underline\\_\\_, \\~\\~strikethrough\\~\\~ or \\`monospace\\`. If you don't want to use markdown, put a backslash in front of your symbols to escape them, like \\\\\\_this\\\\\\_.",
+						updateText: "BP Overlay v1.6.7  \nAdded markdown-style formatting for chat messages. Try \\_italics\\_ or \\*italics\\*, \\*\\*bold\\*\\*, \\_\\_underline\\_\\_, \\~\\~strikethrough\\~\\~ or \\`monospace\\`. If you don't want to use markdown, put a backslash in front of your symbols to escape them, like \\\\\\_this\\\\\\_.",
 					},
 					fr: {
 						timeText: "Temps Écoulé : ",
@@ -259,6 +261,8 @@ var source = function() {
 						deathsTitle: "Vies perdues dans cette partie",
 						alphaText: "Alpha",
 						alphaTitle: "La lettre à laquelle ce joueur serait si il jouait en mode alphabet. (Le chiffre entre parenthèses est le nombre de fois où il a complété l'alphabet)",
+                        wordsText: "Mots",
+                        wordsTitle: "Le nombre total de mots utilsés par ce joueur",
 						playersTitle: "Joueurs :",
 						chatDownButtonTitle: "Forcer le tchat à défiler vers le bas quand il y a un nouveau message.",
 						autoFocusButtonTitle: "Positionner automatiquement le curseur sur le tchat après son tour",
@@ -360,7 +364,7 @@ var source = function() {
 							fran: "FR",
 						},
 						twitchEmoteError: "Erreur : Les émoticones Twitch n'ont pas été chargées.",
-						updateText: "BP Overlay v1.6.4  \nAjout d'un nouveau style de mise en forme de message semblable au Markdown. Essayez \\_italique\\_ ou \\*italique\\*, \\*\\*gras\\*\\*, \\_\\_souligné\\_\\_, \\~\\~barré\\~\\~ ou \\`monospace\\`. Si vous ne voulez pas utiliser le Markdown, insérez une barre oblique pour ignorer la mise en forme. Exemple : \\\\\\_Exemple\\\\\\_",
+						updateText: "BP Overlay v1.6.7  \nAjout d'un nouveau style de mise en forme de message semblable au Markdown. Essayez \\_italique\\_ ou \\*italique\\*, \\*\\*gras\\*\\*, \\_\\_souligné\\_\\_, \\~\\~barré\\~\\~ ou \\`monospace\\`. Si vous ne voulez pas utiliser le Markdown, insérez une barre oblique pour ignorer la mise en forme. Exemple : \\\\\\_Exemple\\\\\\_",
 					},
 				},
 				language: (document.cookie.indexOf("i18next=fr") !== -1 ? "fr" : "en"),
@@ -403,6 +407,7 @@ var source = function() {
 				flips: {}, // Stores flips by actor index
 				uFlips: {}, // Stores u-flips by actor index
 				alpha: {}, // Stores progress across the alphabet
+                words: {}, // Stores number of words used per player
 				wordCount: 0, // Stores word count for current round
 				startTime: 0, // Stores (in milliseconds since the epoch) the starting time of the round
 				timeText: "", // Stores the text used to display the time on the overlay
@@ -1577,6 +1582,7 @@ var source = function() {
 				bpOverlay.prevLostLives = bpOverlay.lostLives;
 				bpOverlay.prevFlips = bpOverlay.flips;
 				bpOverlay.prevUFlips = bpOverlay.uFlips;
+                bpOverlay.prevWords = bpOverlay.words;
 				bpOverlay.prevTimeText = bpOverlay.timeText;
 				bpOverlay.prevWordCount = bpOverlay.wordCount;
 
@@ -1587,6 +1593,7 @@ var source = function() {
 				bpOverlay.flips = {};
 				bpOverlay.uFlips = {};
 				bpOverlay.alpha = {};
+                bpOverlay.words = {};
 
 				actors = channel.data.actors;
 
@@ -1598,6 +1605,7 @@ var source = function() {
 					bpOverlay.uFlips[i] = 0;
 					bpOverlay.lostLives[i] = 0;
 					bpOverlay.alpha[i] = {progress: 0, completed: 0};
+                    bpOverlay.words[i] = 0;
 				}
 
 				// More resetting...
@@ -1769,6 +1777,16 @@ var source = function() {
 				alphaColumnHeader.title = tran.t("alphaTitle");
 				firstRow.appendChild(alphaColumnHeader);
 				
+                var wordsColumnHeader = document.createElement("td");
+				wordsColumnHeader.textContent = tran.t("wordsText");
+				wordsColumnHeader.style.color = "rgb(200,200,200)";
+				wordsColumnHeader.align = "center";
+				wordsColumnHeader.style.padding = "2px";
+				wordsColumnHeader.style.fontSize = "11px";
+				wordsColumnHeader.style.width = "40px";
+				wordsColumnHeader.title = tran.t("wordsTitle");
+				firstRow.appendChild(wordsColumnHeader);
+                
 				// Loop through the players, making a new row for each one
 				for (i = 0; i < actors.length; i++) {
 					var playerRow = document.createElement("tr");
@@ -1829,6 +1847,13 @@ var source = function() {
 					alphaData.align = "center";
 					playerRow.appendChild(alphaData);
 					
+                    var wordsData = document.createElement("td");
+                    wordsData.className = "wordsColumn";
+                    wordsData.id = i + " words";
+                    wordsData.innerHTML = "0";
+                    wordsData.align = "center";
+                    playerRow.appendChild(wordsData);
+                    
 					// Append the row to the table
 					infoTable.appendChild(playerRow);
 				}
@@ -2655,6 +2680,12 @@ var source = function() {
 							updateScores();
 						}
 
+                        // Update the words counter
+                        bpOverlay.words[playerNum]++;
+                        if (bpOverlay.boxHasBeenCreated || bpOverlay.dragBoxHasBeenCreated) {
+                            document.getElementById(playerNum + " words").textContent = bpOverlay.words[playerNum];
+                        }
+                        
 						// Update the alpha thing
 						if (lastWord[0].toLowerCase() === bpOverlay.alphabet[bpOverlay.alpha[playerNum].progress]) {
 							bpOverlay.alpha[playerNum].progress++;
@@ -2663,9 +2694,9 @@ var source = function() {
 								bpOverlay.alpha[playerNum].completed++;
 							}
 							
-								if (bpOverlay.boxHasBeenCreated || bpOverlay.dragBoxHasBeenCreated) {
-									document.getElementById(playerNum + " alpha").textContent = bpOverlay.alphabet[bpOverlay.alpha[playerNum].progress].toUpperCase() + " (" + bpOverlay.alpha[playerNum].completed + ")";
-								}
+                            if (bpOverlay.boxHasBeenCreated || bpOverlay.dragBoxHasBeenCreated) {
+                                document.getElementById(playerNum + " alpha").textContent = bpOverlay.alphabet[bpOverlay.alpha[playerNum].progress].toUpperCase() + " (" + bpOverlay.alpha[playerNum].completed + ")";
+                            }
 						}
 						
 						// If the lockedLetters is empty after removing all those, letters, the player has flipped
