@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         BombParty Overlay
-// @version      1.6.7
+// @version      1.6.8
 // @description  Overlay + Utilities for BombParty!
 // @icon         https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/dist/icon.png
 // @icon64       https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/dist/icon64.png
@@ -220,6 +220,11 @@ var source = function() {
 							on: "On",
 							off: "Off",
 						},
+                        wordCounterName: "Word Counter Display",
+                        wordCounterOptions: {
+                            on: "On",
+                            off: "Off",
+                        },
 						muted: "(muted)",
 						muteUser: "Mute",
 						unmuteUser: "Unmute",
@@ -247,7 +252,7 @@ var source = function() {
 							fran: "FR",
 						},
 						twitchEmoteError: "Error: Twitch emotes have not been loaded.",
-						updateText: "BP Overlay v1.6.7  \nAdded markdown-style formatting for chat messages. Try \\_italics\\_ or \\*italics\\*, \\*\\*bold\\*\\*, \\_\\_underline\\_\\_, \\~\\~strikethrough\\~\\~ or \\`monospace\\`. If you don't want to use markdown, put a backslash in front of your symbols to escape them, like \\\\\\_this\\\\\\_.",
+						updateText: "BP Overlay v1.6.8  \nAdded markdown-style formatting for chat messages. Try \\_italics\\_ or \\*italics\\*, \\*\\*bold\\*\\*, \\_\\_underline\\_\\_, \\~\\~strikethrough\\~\\~ or \\`monospace\\`. If you don't want to use markdown, put a backslash in front of your symbols to escape them, like \\\\\\_this\\\\\\_.",
 					},
 					fr: {
 						timeText: "Temps Écoulé : ",
@@ -333,10 +338,15 @@ var source = function() {
 							off: "Désactivé",
 						},
 						alphaRouletteName: "Affichage Mode Alphabet",
-						  alphaRouletteOptions: {
+						alphaRouletteOptions: {
 						   on: "Activé",
 						   off: "Désactivé",
-						  },
+						},
+                        wordCounterName: "Affichage Compteur de Mots",
+                        wordCounterOptions: {
+                            on: "Activé",
+                            off: "Désactivé",
+                        },
 						muted: "(muted)",
 						muteUser: "Ignorer",
 						unmuteUser: "Autoriser",
@@ -364,7 +374,7 @@ var source = function() {
 							fran: "FR",
 						},
 						twitchEmoteError: "Erreur : Les émoticones Twitch n'ont pas été chargées.",
-						updateText: "BP Overlay v1.6.7  \nAjout d'un nouveau style de mise en forme de message semblable au Markdown. Essayez \\_italique\\_ ou \\*italique\\*, \\*\\*gras\\*\\*, \\_\\_souligné\\_\\_, \\~\\~barré\\~\\~ ou \\`monospace\\`. Si vous ne voulez pas utiliser le Markdown, insérez une barre oblique pour ignorer la mise en forme. Exemple : \\\\\\_Exemple\\\\\\_",
+						updateText: "BP Overlay v1.6.8  \nAjout d'un nouveau style de mise en forme de message semblable au Markdown. Essayez \\_italique\\_ ou \\*italique\\*, \\*\\*gras\\*\\*, \\_\\_souligné\\_\\_, \\~\\~barré\\~\\~ ou \\`monospace\\`. Si vous ne voulez pas utiliser le Markdown, insérez une barre oblique pour ignorer la mise en forme. Exemple : \\\\\\_Exemple\\\\\\_",
 					},
 				},
 				language: (document.cookie.indexOf("i18next=fr") !== -1 ? "fr" : "en"),
@@ -1779,6 +1789,7 @@ var source = function() {
 				
                 var wordsColumnHeader = document.createElement("td");
 				wordsColumnHeader.textContent = tran.t("wordsText");
+                wordsColumnHeader.className = "wordsColumn";
 				wordsColumnHeader.style.color = "rgb(200,200,200)";
 				wordsColumnHeader.align = "center";
 				wordsColumnHeader.style.padding = "2px";
@@ -3758,6 +3769,29 @@ var source = function() {
 					}
 				);
 				
+                var wordsColumnStyle = document.createElement("STYLE");
+				wordsColumnStyle.textContent = ".wordsColumn{display:none;}";
+				document.head.appendChild(wordsColumnStyle);
+                
+                // Word counter display
+                generateSettingsElement(
+                    tran.t("wordCounterName"),
+                    {
+                        on: tran.t("wordCounterOptions.on"),
+                        off: tran.t("wordCounterOptions.off"),
+                    },
+                    "wordCounterSelect", "overlaySettingsTable",
+					function () {
+						var sTabSelect = document.getElementById("wordCounterSelect");
+						if (sTabSelect.value == "on") {
+							wordsColumnStyle.textContent = "";
+						}
+						else {
+							wordsColumnStyle.textContent = ".wordsColumn{display:none;}";
+						}
+					}
+                );
+                
 				// Only add this if speech synthesis is supported by the browser
 				if (window.speechSynthesis) {
 					var speechListener = function (e) {
@@ -3849,7 +3883,8 @@ var source = function() {
 				}
 				
 				document.getElementById("alphaRouletteSelect").value = "off";
-				
+				document.getElementById("wordCounterSelect").value = "off";
+                
 				// Wrap game functions, make the autoscroll/focus buttons.
 				wrapGameFunctions();
 				
@@ -4208,7 +4243,8 @@ var attachToSettings = function () {
 		var afb = document.getElementById("autoFocusButton");
 		var db = document.getElementById("dragButton");
 		var ars = document.getElementById("alphaRouletteSelect");
-		
+		var wcs = document.getElementById("wordCounterSelect");
+        
 		var loadAndChangeSelect = function (element, valueName, defaultValue) {
 			if (GM_getValue(valueName, defaultValue) !== element.value) {
 				element.value = GM_getValue(valueName, defaultValue);
@@ -4231,6 +4267,7 @@ var attachToSettings = function () {
 		loadAndChangeSelect(nai, "notificationAlias", "");  // Yay duck typing
 		loadAndChangeSelect(egns, "endGameNotificationSetting", "off");
 		loadAndChangeSelect(ars, "alphaRouletteState", "off");
+        loadAndChangeSelect(wcs, "wordCounterState", "off");
 		loadAndChangeSelect(ps, "particleState", "high");
 		loadAndChangeButton(cdb, "chatDownState", "true");  // String booleans because of the way data attributes work in HTML :(
 		                                                    // Trust me, I don't like being stringly typed either
@@ -4300,6 +4337,12 @@ var attachToSettings = function () {
 			}, 100);
 		});
 	
+        wcs.addEventListener("change", function () {
+           setTimeout(function () {
+               GM_setValue("wordCounterState", wcs.value);
+           }, 100);
+        });
+    
 		cdb.addEventListener("click", function () {
 			setTimeout(function () {
 				GM_setValue("chatDownState", cdb.dataset.state);
