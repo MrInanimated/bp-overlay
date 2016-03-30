@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         BombParty Overlay
-// @version      1.6.8
+// @version      1.6.10
 // @description  Overlay + Utilities for BombParty!
 // @icon         https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/dist/icon.png
 // @icon64       https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/dist/icon64.png
@@ -1383,7 +1383,11 @@ var source = function() {
 									ctx.fillStyle = thisStyle.color;
 								}
 								if (thisStyle.shadow) {
-									ctx.shadowColor = "#000";
+                                    if (typeof thisStyle.shadow === "string")
+                                        ctx.shadowColor = thisStyle.shadow;
+                                    else
+                                        ctx.shadowColor = "#000";
+
 									ctx.shadowBlur = 10;
 								}
 								
@@ -2698,7 +2702,7 @@ var source = function() {
                         }
                         
 						// Update the alpha thing
-						if (lastWord[0].toLowerCase() === bpOverlay.alphabet[bpOverlay.alpha[playerNum].progress]) {
+						if (lastWord.toLowerCase()[0] === bpOverlay.alphabet[bpOverlay.alpha[playerNum].progress]) {
 							bpOverlay.alpha[playerNum].progress++;
 							if (bpOverlay.alpha[playerNum].progress >= bpOverlay.alphabet.length) {
 								bpOverlay.alpha[playerNum].progress = 0;
@@ -3795,6 +3799,8 @@ var source = function() {
 				// Only add this if speech synthesis is supported by the browser
 				if (window.speechSynthesis) {
 					var speechListener = function (e) {
+                        if (bpOverlay.ignoring[e.userAuthId]) return;
+                        
 						var iterator=0;
 						for(i=200; i<e.text.length; i+= 200) {
 							for(j=i; j >= iterator; j -= 1) {	
