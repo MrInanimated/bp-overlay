@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         BombParty Overlay
-// @version      1.7.0
+// @version      1.7.1
 // @description  Overlay + Utilities for BombParty!
 // @icon         https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/dist/icon.png
 // @icon64       https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/dist/icon64.png
@@ -2510,7 +2510,9 @@ var source = function() {
                         a.push(
                             (null == (t = e) ? "" : t) +
                             ':  <span class="Content">' +
-                            markdown(twitchify(jade.escape(null == (t = n) ? "" : t))) +  // This function is literally the exact same as before except for this line
+                            markdown(twitchify(Autolinker.link(jade.escape(null == (t = n) ? "" : t), {
+                                className: "chatMessageLink"
+                            }))) +  // This function is literally the exact same as before except for this line
                             "</span>")
                     }.call(this, "author" in n ? n.author : "undefined" != typeof author ? author : void 0, "text" in n ? n.text : "undefined" != typeof text ? text : void 0), a.join("")
                 };
