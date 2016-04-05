@@ -2028,6 +2028,7 @@ var source = function() {
                 var globalEmotes = twitch_global;
                 var subEmotes = twitch_subscriber;
                 var ffzEmotes = ffz_emotes;
+                
                 // TODO: Move this to a resource file somewhere
                 var specialEmotes = {
                     "D:": {
