@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         BombParty Overlay
-// @version      1.6.10
+// @version      1.7.0
 // @description  Overlay + Utilities for BombParty!
 // @icon         https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/dist/icon.png
 // @icon64       https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/dist/icon64.png
@@ -50,12 +50,8 @@ function addJQuery(callback) {
   document.body.appendChild(script);
 }
 
-// an empty callback loader (also for main page)
-function main() {
-}
-
 // load jQuery and execute the main function
-addJQuery(main);
+addJQuery(function () {});
 
 // JSON Parser, by Douglas Crockford
 // This is necessary because in this environment I don't have access to the JSON object
@@ -252,7 +248,7 @@ var source = function() {
                             fran: "FR",
                         },
                         twitchEmoteError: "Error: Twitch emotes have not been loaded.",
-                        updateText: "BP Overlay v1.6.8  \nAdded markdown-style formatting for chat messages. Try \\_italics\\_ or \\*italics\\*, \\*\\*bold\\*\\*, \\_\\_underline\\_\\_, \\~\\~strikethrough\\~\\~ or \\`monospace\\`. If you don't want to use markdown, put a backslash in front of your symbols to escape them, like \\\\\\_this\\\\\\_.",
+                        updateText: "BP Overlay v1.7.0  \nNew emote system: Twitch subscriber emotes no longer need square brackets (except a couple that might be used by accident).",
                     },
                     fr: {
                         timeText: "Temps Écoulé : ",
@@ -374,7 +370,7 @@ var source = function() {
                             fran: "FR",
                         },
                         twitchEmoteError: "Erreur : Les émoticones Twitch n'ont pas été chargées.",
-                        updateText: "BP Overlay v1.6.8  \nAjout d'un nouveau style de mise en forme de message semblable au Markdown. Essayez \\_italique\\_ ou \\*italique\\*, \\*\\*gras\\*\\*, \\_\\_souligné\\_\\_, \\~\\~barré\\~\\~ ou \\`monospace\\`. Si vous ne voulez pas utiliser le Markdown, insérez une barre oblique pour ignorer la mise en forme. Exemple : \\\\\\_Exemple\\\\\\_",
+                        updateText: "BP Overlay v1.7.0",
                     },
                 },
                 language: (document.cookie.indexOf("i18next=fr") !== -1 ? "fr" : "en"),
@@ -2020,97 +2016,211 @@ var source = function() {
                 }
             }
 
-            // Do a bit of processing on the twitch emotes
-            var twitchEmotes = {};
-            globalEmotes = {};
+            window.twitch = {
+                emotes: {},
+                templates: {},
+                nonalphabetic: {},
+                blacklist: {},
+            };
             
-            // I'm gonna add the FrankerFaceZ emotes to the global emotes too
-            
+            // Process twitch emotes
             try {
-                var globalTemplate = twitch_global.template;
-                var subscriberTemplate = twitch_subscriber.template;
+                var globalEmotes = twitch_global;
+                var subEmotes = twitch_subscriber;
+                var ffzEmotes = ffz_emotes;
+                // TODO: Move this to a resource file somewhere
+                var specialEmotes = {
+                    "D:": {
+                        src: "//cdn.betterttv.net/emote/55028cd2135896936880fdd7/1x",
+                        titlePrefix: "(bttv) ",
+                    },
+                    "(ditto)": {
+                        src: "//cdn.betterttv.net/emote/554da1a289d53f2d12781907/1x",
+                        titlePrefix: "(bttv) "
+                    },
+                    "MikuStare": {
+                        src: "//cdn.frankerfacez.com/emoticon/72267/1",
+                        titlePrefix: "(ffz) ",
+                    },
+                    "FrankerZed": {
+                        src: "//cdn.frankerfacez.com/emoticon/43246/1",
+                        titlePrefix: "(ffz) ",
+                    },
+                    "WooperZ": {
+                        src: "//cdn.frankerfacez.com/emoticon/18150/1",
+                        titlePrefix: "(ffz) ",
+                    },
+                    "KevinSquirtle": {
+                        src: "//cdn.frankerfacez.com/emoticon/18146/1",
+                        titlePrefix: "(ffz) ",
+                    },
+                    "TopPika": {
+                        src: "//cdn.frankerfacez.com/emoticon/18149/1",
+                        titlePrefix: "(ffz) ",
+                    },
+                    "FrenchNerd": {
+                        src: "//cdn.frankerfacez.com/emoticon/83539/1",
+                        titlePrefix: "(ffz) ",
+                    },
+                    "DontBully": {
+                        src: "//cdn.frankerfacez.com/emoticon/34549/1",
+                        titlePrefix: "(ffz) ",
+                    },
+                };
 
-                if (!twitch_global.emotes || !twitch_subscriber.channels) {
-                    throw Exception();
-                }
-                
-                for (var i in twitch_global.emotes) {
-                    if (!twitch_global.emotes[i].image_id) {
-                        throw Exception();
+                twitch.templates.global = globalEmotes.template;
+                twitch.templates.subscriber = subEmotes.template;
+
+                // Handle twitch based emotes
+                jQ.each(globalEmotes.emotes, function (code, emote) {
+                    if (!emote.image_id) {
+                        throw "Missing image ID for " + code;
                     }
-                    globalEmotes[i] = {image_id: twitch_global.emotes[i].image_id};
-                }
-                
-                for (var i in twitch_subscriber.channels) {
-                    if (!twitch_subscriber.channels[i].emotes.length) {
-                        throw Exception();
+                    twitch.emotes[code] = { image_id: emote.image_id, type: "global" };
+
+                    if (code.search(/\W/) > -1) {
+                        twitch.nonalphabetic[code] = twitch.emotes[code];
                     }
-                    for (var j = 0; j < twitch_subscriber.channels[i].emotes.length; j++) {
-                        if (!twitch_subscriber.channels[i].emotes[j].code || !twitch_subscriber.channels[i].emotes[j].image_id) {
-                            throw Exception();
-                        }
-                        var code = twitch_subscriber.channels[i].emotes[j].code;
-                        twitchEmotes[code] = {image_id: twitch_subscriber.channels[i].emotes[j].image_id, channel: i};
-                    }
-                }
-            }
-            catch (e) {
-                console.log("twitchemotes.com api v2 loading failed :(");
-                bpOverlay.emoteError = true;
-            }
-            
-            try {
-                // FFZ emotes
-                for (var i in ffz_emotes.sets) {
-                    var set = ffz_emotes.sets[i];
-                    
-                    for (var j = 0; j < set.emoticons.length; j++) {
-                        var emoticon = set.emoticons[j];
-                        
-                        if (!emoticon.urls[1]) {
-                            console.log("Error processing FFZ emote " + emoticon.name);
-                        }
-                        
-                        globalEmotes[emoticon.name] = {src: emoticon.urls[1]};
-                    }
-                }
-            }
-            catch (e) {
-                console.log("FrankerFaceZ emotes loading failed, hopefully the other emotes are still fine...");
-            }
-            
-            // It now makes more sense to have the twitch emotes in a separate function
-            var twitchify = function (message) {
-                if (bpOverlay.twitchOn && !bpOverlay.emoteError) {
-                
-                    for (var i in globalEmotes) {
-                        if (!bpOverlay.emoteFallback && !globalEmotes[i].src) {
-                            var src = globalTemplate.small.replace("{image_id}", globalEmotes[i].image_id);
+                });
+
+                jQ.each(subEmotes.channels, function (channel, channelObj) {
+                    jQ.each(channelObj.emotes, function (index, emote) {
+                        var code = emote.code;
+                        if (/^([A-Z][a-z]*|[A-Z]+|[a-z]+)$/.test(code)) {
+                            twitch.blacklist[code] = {
+                                image_id: emote.image_id,
+                                channel: channel,
+                                type: "subscriber"
+                            };
                         }
                         else {
-                            var src = globalEmotes[i].src;
-                        }
-                        message = message.replace(new RegExp("\\b" + i + "\\b", "g"), "<img src=\"" + src + "\" alt=\"" + i + "\" title=\"" + i + "\" style=\"vertical-align:-30%\"></img>");
-                    }
-                
-                    message = message.replace(/\[[^\[\]]*\]/g, function (match) {
-                        var code = match.substring(1, match.length - 1);
-                        if (twitchEmotes[code]) {
-                            if (!bpOverlay.emoteFallback) {
-                                var src = (twitchEmotes[code].global ? globalTemplate : subscriberTemplate).small.replace("{image_id}", twitchEmotes[code].image_id);
+                            twitch.emotes[code] = {
+                                image_id: emote.image_id,
+                                channel: channel,
+                                type: "subscriber"
+                            };
+
+                            if (code.search(/\W/) > -1) {
+                                twitch.nonalphabetic[code] = twitch.emotes[code];
                             }
-                            else {
-                                var src = twitchEmotes[code].src;
-                            }
-                            var title = (twitchEmotes[code].channel ? twitchEmotes[code].channel + " &gt; " : "") + code;
-                            return "<img src=\"" + src + "\" alt=\"" + match + "\" title=\"" + title + "\" style=\"vertical-align:-30%\"></img>";
-                        }
-                        else {
-                            return match;
                         }
                     });
-                    
+                });
+
+                // Handle FFZ emotes
+                jQ.each(ffzEmotes.sets, function (setName, set) {
+                    jQ.each(set.emoticons, function (index, emote) {
+                        var code = emote.name;
+
+                        if (!emote.urls[1]) {
+                            throw "Missing source url for " + code;
+                        }
+
+                        twitch.emotes[code] = {
+                            css: emote.css,
+                            margins: emote.margins,
+                            src: emote.urls[1],
+                            type: "ffz",
+                        };
+
+                        if (code.search(/\W/) > -1) {
+                            twitch.nonalphabetic[code] = twitch.emotes[code];
+                        }
+                    });
+                });
+
+                // Handle special emotes
+                jQ.each(specialEmotes, function (code, emote) {
+                    twitch.emotes[code] = {
+                        src: emote.src,
+                        titlePrefix: emote.titlePrefix,
+                        type: "special",
+                    };
+
+                    if (code.search(/\W/) > -1) {
+                        twitch.nonalphabetic[code] = twitch.emotes[code];
+                    }
+                });
+            }
+            catch (e) {
+                // Emote loading failed
+                console.error(e);
+
+                channel.appendToChat("Info", "Loading of twitch emotes failed :(");
+                bpOverlay.emoteError = true;
+            }
+
+            var twitchify_new = function (message) {
+                if (!bpOverlay.twitchOn || bpOverlay.emoteError)
+                    return message;
+
+                function getEmote(code, emote) {
+                    if (twitch.emotes[code] || emote) {
+                        emote = emote || twitch.emotes[code];
+
+                        var src;
+                        var title;
+                        switch (emote.type) {
+                            case "ffz":
+                                src = emote.src;
+                                title = "(ffz) " + code;
+                                break;
+                            case "subscriber":
+                                src = twitch.templates.global.small.replace(
+                                    "{image_id}", emote.image_id);
+                                title = emote.channel + " > " + code;
+                                break;
+                            case "global":
+                                src = twitch.templates.subscriber.small.replace(
+                                    "{image_id}", emote.image_id);
+                                title = code;
+                                break;
+                            case "special":
+                                src = emote.src;
+                                title = emote.titlePrefix + code;
+                                break;
+                        }
+
+                        var margins = emote.margins;
+
+                        return '<img src="' + src + '" alt="' + code +
+                            '" title="' + title +
+                            (margins ? '" style="margin:' + margins : "") +
+                            '" class="emoticon"></img>';
+                    }
+                    else {
+                        return code;
+                    }
                 }
+
+                // Deal with nonalphanumeric emotes first
+                var words = message.split(/(<(?:"[^"]*"['"]*|'[^']*'['"]*|[^'">])+>| )/);
+                for (var i = 0; i < words.length; i++) {
+                    if (twitch.nonalphabetic[words[i]]) {
+                        words[i] = getEmote(words[i]);
+                    }
+                }
+                message = words.join("");
+
+                words = message.split(/(<(?:"[^"]*"['"]*|'[^']*'['"]*|[^'">])+>|\W)/);
+                for (i = 0; i < words.length; i++) {
+                    words[i] = getEmote(words[i]);
+                }
+
+                message = words.join("");
+
+                // Deal with blacklisted emotes
+                return message.replace(/\[[^\]]+\]/g, function (match) {
+                    var code = match.substring(1, match.length - 1);
+                    if (twitch.blacklist[code]) {
+                        return getEmote(match, twitch.blacklist[code]);
+                    }
+                    return match;
+                });
+            };
+            // It now makes more sense to have the twitch emotes in a separate function
+            var twitchify = function (message) {
+                message = twitchify_new(message);
                 if (bpOverlay.markupOn) {
                     // Quick and dirty
                     // Undo the escaping the <b> <i> <s> and <u> tags.
@@ -2444,15 +2554,15 @@ var source = function() {
                 channel.appendToChat = function(header, message) {
                     // This stuff's in a try block because I want the default functions to go through even if my custom code fails
                     try {
-                        // Link using the autolinker library any links in the message.
-                        message = Autolinker.link(message, {
-                            className: "chatMessageLink"
-                        });
-                        // That should be fine, because I don't think the Autolinker library disturbs existing tags
-                        
                         // Since Info messages don't go through JST
                         // This is needed
                         if (header === "Info" && message.indexOf("class=\"User\"") === -1) {
+                            // Link using the autolinker library any links in the message.
+                            message = Autolinker.link(message, {
+                                className: "chatMessageLink"
+                            });
+                            // That should be fine, because I don't think the Autolinker library disturbs existing tags
+                        
                             message = twitchify(message);
                             
                             // Pass the message through the markdown thingy
@@ -2469,6 +2579,30 @@ var source = function() {
                         gameChat(header, message);
                     }
                 };
+                
+                // Process previous messages
+                jQ("#ChatLog > li").each(function (i, el) {
+                    $el = jQ(el);
+                    if ($el.hasClass("Info") && $el.html().indexOf('class="User"') === -1) {
+                        var message = $el.html();
+                        message = Autolinker.link(message, {
+                            className: "chatMessageLink"
+                        });
+                        message = twitchify(message);
+                        message = markdown(message);
+                        $el.html(message);
+                    }
+                    else if ($el.hasClass("Message")) {
+                        $content = $el.find(".Content");
+                        var message = $content.html();
+                        message = Autolinker.link(message, {
+                            className: "chatMessageLink"
+                        });
+                        message = twitchify(message);
+                        message = markdown(message);
+                        $content.html(message);
+                    }
+                });
                 
                 // setActivePlayerIndex wrapper
                 var gameSetActivePlayerIndex = channel.socket.listeners("setActivePlayerIndex").shift();
@@ -2951,7 +3085,7 @@ var source = function() {
                                     }
                                 }
                         })
-                         .call(this), a.push("<span" + jade.attr("title", l.join(", "), !0, !1) + ' class="BpOS-User">'), "" != e.role && a.push("<span" + jade.attr("title", n.t("nuclearnode:userRoles." + e.role), !0, !1) + jade.cls(["UserRole_" + e.role], [!0]) + "></span> "), a.push(jade.escape(null == (t = e.displayName) ? "" : t)), a.push('<span class="Actions">'), ("moderator" == r.user.role || "host" == r.user.role || "hubAdministrator" == r.user.role) && (a.push('<button' + jade.attr("data-auth-id", e.authId, !0, !1) + jade.attr("data-display-name", e.displayName, !0, !1) + ' class="BanUser">' + jade.escape(null == (t = n.t("nuclearnode:chat.ban")) ? "" : t) + "</button>"), ("host" == r.user.role || "hubAdministrator" == r.user.role) && a.push("<button" + jade.attr("data-auth-id", e.authId, !0, !1) + jade.attr("data-display-name", e.displayName, !0, !1) + ' class="ModUser">' + jade.escape(null == (t = n.t("nuclearnode:chat.mod")) ? "" : t) + "</button>")), a.push("<button" + jade.attr("data-auth-id", e.authId, !0, !1) + jade.attr("data-display-name", e.displayName, !0, !1) + ' class="MuteUser">' + tran.t("muteUser") + "</button>"), a.push("</span>"), a.push("</span>")
+                         .call(this), a.push("<span" + jade.attr("title", l.join(", "), !0, !1) + jade.attr("data-auth-id", e.authId, !0, !1) + ' class="BpOS-User User">'), "" != e.role && a.push("<span" + jade.attr("title", n.t("nuclearnode:userRoles." + e.role), !0, !1) + jade.cls(["UserRole_" + e.role], [!0]) + "></span> "), a.push(jade.escape(null == (t = e.displayName) ? "" : t)), a.push('<span class="Actions">'), ("moderator" == r.user.role || "host" == r.user.role || "hubAdministrator" == r.user.role) && (a.push('<button' + jade.attr("data-auth-id", e.authId, !0, !1) + jade.attr("data-display-name", e.displayName, !0, !1) + ' class="BanUser">' + jade.escape(null == (t = n.t("nuclearnode:chat.ban")) ? "" : t) + "</button>"), ("host" == r.user.role || "hubAdministrator" == r.user.role) && a.push("<button" + jade.attr("data-auth-id", e.authId, !0, !1) + jade.attr("data-display-name", e.displayName, !0, !1) + ' class="ModUser">' + jade.escape(null == (t = n.t("nuclearnode:chat.mod")) ? "" : t) + "</button>")), a.push("<button" + jade.attr("data-auth-id", e.authId, !0, !1) + jade.attr("data-display-name", e.displayName, !0, !1) + ' class="MuteUser">' + tran.t("muteUser") + "</button>"), a.push("</span>"), a.push("</span>")
                         
                         PDIH += a.join("");
                         PDIH += "<br />";
@@ -3022,7 +3156,7 @@ var source = function() {
                 // Probably a better way of doing this
                 // Lol. TFW web-console css is hard
                 var style = document.createElement('style');
-                style.appendChild(document.createTextNode('.headerButtonDiv {  display: -webkit-box;  display: -moz-box;  display: -webkit-flex;  display: -ms-flexbox;  display: box;  display: flex;  opacity: 0.3;  -ms-filter: "progid:DXImageTransform.Microsoft.Alpha(Opacity=30)";  filter: alpha(opacity=30);} .headerButtonDiv:hover {  opacity: 1;  -ms-filter: none;  filter: none;} button.headerButton {  border: none;  background: none;  cursor: pointer;  opacity: 0.5;  -ms-filter: "progid:DXImageTransform.Microsoft.Alpha(Opacity=50)";  filter: alpha(opacity=50);  display: -webkit-box;  display: -moz-box;  display: -webkit-flex;  display: -ms-flexbox;  display: box;  display: flex;} button.headerButton:hover {  opacity: 0.8;  -ms-filter: "progid:DXImageTransform.Microsoft.Alpha(Opacity=80)";  filter: alpha(opacity=80);} button.headerButton:active {  opacity: 1;  -ms-filter: none;  filter: none;} .infoTableDiv::-webkit-scrollbar { width: 15px; height: 15px; } .infoTableDiv::-webkit-scrollbar-button { height: 0px; width: 0px; } .infoTableDiv::-webkit-scrollbar-track { background-color: rgba(0,0,0,0.05); } .infoTableDiv::-webkit-scrollbar-thumb { background-color: rgba(255,255,255,0.1); border: 3px solid transparent; -webkit-border-radius: 6px; border-radius: 6px; -webkit-background-clip: content; -moz-background-clip: content; background-clip: content-box; } .infoTableDiv::-webkit-scrollbar-thumb:hover { background-color: rgba(255,255,255,0.15); } .infoTableDiv::-webkit-scrollbar-corner { background-color: rgba(255,255,255,0.1); }#overlaySettingsTab{text-align:left;overflow-y:auto}#overlaySettingsTab h2{padding:.5em .5em 0;opacity:.5;-ms-filter:"alpha(Opacity=50)";filter:alpha(opacity=50)}#overlaySettingsTab h3{padding:.5em .5em 0;opacity:.5;-ms-filter:"alpha(Opacity=50)";filter:alpha(opacity=50)}#overlaySettingsTab table{width:100%;padding:.5em}#overlaySettingsTab table tr td:nth-child(1){width:40%}#overlaySettingsTab table tr td:nth-child(2){width:60%}#overlaySettingsTab table button:not(.UnbanUser),#overlaySettingsTab table input,#overlaySettingsTab table select,#overlaySettingsTab table textarea{width:100%;background:#444;border:none;padding:.25em;color:#fff;font:inherit}#overlaySettingsTab table textarea{resize:vertical;min-height:3em}#overlaySettingsTab table ul{list-style:none}#overlaySettingsTab .BpOS-User .UserRole_hubAdministrator:before{content:\'[★]\';cursor:default;color:#c63}#overlaySettingsTab .BpOS-User .UserRole_host:before{content:\'★\';cursor:default;color:#dc8}#overlaySettingsTab .BpOS-User .UserRole_administrator:before{content:\'☆\';cursor:default;color:#dc8}#overlaySettingsTab .BpOS-User .UserRole_moderator:before{content:\'●\';cursor:default;color:#346192}#overlaySettingsTab .Actions button{border:none;background:0 0;cursor:pointer;margin:0 .25em;outline:0;font-weight:400;font-size:smaller;opacity:.8;-ms-filter:"alpha(Opacity=80)";filter:alpha(opacity=80)}#overlaySettingsTab .Actions button.BanUser{color:#a00}#overlaySettingsTab .Actions button.ModUser,#overlaySettingsTab .Actions button.UnmodUser{color:#2a3} .Actions button.MuteUser{color:#ddd} .Actions button.UnmuteUser{color:#eee} #overlaySettingsTab .Actions button:hover{opacity:1;-ms-filter:none;filter:none}#overlaySettingsTab .Actions button:active{background:rgba(255,0,0,.2)}#overlaySettingsTab input{-moz-user-select:text;-webkit-user-select:text;-ms-user-select:text}#ChatLog .highlighted{background: rgba(255, 0, 0, 0.05);}#ChatLog .highlighted:hover {background: rgba(255, 0, 0, 0.1);} input[type=text], textarea { -webkit-user-select: text; -moz-user-select: text; -ms-user-select: text; user-select: text; }'));
+                style.appendChild(document.createTextNode('.headerButtonDiv {  display: -webkit-box;  display: -moz-box;  display: -webkit-flex;  display: -ms-flexbox;  display: box;  display: flex;  opacity: 0.3;  -ms-filter: "progid:DXImageTransform.Microsoft.Alpha(Opacity=30)";  filter: alpha(opacity=30);} .headerButtonDiv:hover {  opacity: 1;  -ms-filter: none;  filter: none;} button.headerButton {  border: none;  background: none;  cursor: pointer;  opacity: 0.5;  -ms-filter: "progid:DXImageTransform.Microsoft.Alpha(Opacity=50)";  filter: alpha(opacity=50);  display: -webkit-box;  display: -moz-box;  display: -webkit-flex;  display: -ms-flexbox;  display: box;  display: flex;} button.headerButton:hover {  opacity: 0.8;  -ms-filter: "progid:DXImageTransform.Microsoft.Alpha(Opacity=80)";  filter: alpha(opacity=80);} button.headerButton:active {  opacity: 1;  -ms-filter: none;  filter: none;} .infoTableDiv::-webkit-scrollbar { width: 15px; height: 15px; } .infoTableDiv::-webkit-scrollbar-button { height: 0px; width: 0px; } .infoTableDiv::-webkit-scrollbar-track { background-color: rgba(0,0,0,0.05); } .infoTableDiv::-webkit-scrollbar-thumb { background-color: rgba(255,255,255,0.1); border: 3px solid transparent; -webkit-border-radius: 6px; border-radius: 6px; -webkit-background-clip: content; -moz-background-clip: content; background-clip: content-box; } .infoTableDiv::-webkit-scrollbar-thumb:hover { background-color: rgba(255,255,255,0.15); } .infoTableDiv::-webkit-scrollbar-corner { background-color: rgba(255,255,255,0.1); }#overlaySettingsTab{text-align:left;overflow-y:auto}#overlaySettingsTab h2{padding:.5em .5em 0;opacity:.5;-ms-filter:"alpha(Opacity=50)";filter:alpha(opacity=50)}#overlaySettingsTab h3{padding:.5em .5em 0;opacity:.5;-ms-filter:"alpha(Opacity=50)";filter:alpha(opacity=50)}#overlaySettingsTab table{width:100%;padding:.5em}#overlaySettingsTab table tr td:nth-child(1){width:40%}#overlaySettingsTab table tr td:nth-child(2){width:60%}#overlaySettingsTab table button:not(.UnbanUser),#overlaySettingsTab table input,#overlaySettingsTab table select,#overlaySettingsTab table textarea{width:100%;background:#444;border:none;padding:.25em;color:#fff;font:inherit}#overlaySettingsTab table textarea{resize:vertical;min-height:3em}#overlaySettingsTab table ul{list-style:none}#overlaySettingsTab .BpOS-User .UserRole_hubAdministrator:before{content:\'[★]\';cursor:default;color:#c63}#overlaySettingsTab .BpOS-User .UserRole_host:before{content:\'★\';cursor:default;color:#dc8}#overlaySettingsTab .BpOS-User .UserRole_administrator:before{content:\'☆\';cursor:default;color:#dc8}#overlaySettingsTab .BpOS-User .UserRole_moderator:before{content:\'●\';cursor:default;color:#346192}#overlaySettingsTab .Actions button{border:none;background:0 0;cursor:pointer;margin:0 .25em;outline:0;font-weight:400;font-size:smaller;opacity:.8;-ms-filter:"alpha(Opacity=80)";filter:alpha(opacity=80)}#overlaySettingsTab .Actions button.BanUser{color:#a00}#overlaySettingsTab .Actions button.ModUser,#overlaySettingsTab .Actions button.UnmodUser{color:#2a3} .Actions button.MuteUser{color:#ddd} .Actions button.UnmuteUser{color:#eee} #overlaySettingsTab .Actions button:hover{opacity:1;-ms-filter:none;filter:none}#overlaySettingsTab .Actions button:active{background:rgba(255,0,0,.2)}#overlaySettingsTab input{-moz-user-select:text;-webkit-user-select:text;-ms-user-select:text}#ChatLog .highlighted{background: rgba(255, 0, 0, 0.05);}#ChatLog .highlighted:hover {background: rgba(255, 0, 0, 0.1);} input[type=text], textarea { -webkit-user-select: text; -moz-user-select: text; -ms-user-select: text; user-select: text; } .emoticon { display: inline-block; margin: -5px 0; padding-top: 5px; vertical-align: baseline !important; }'));
                 document.getElementsByTagName('head')[0].appendChild(style);
                 
                 // Load the hideDead on/off images
