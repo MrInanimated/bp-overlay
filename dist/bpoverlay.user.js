@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         BombParty Overlay
-// @version      1.7.1
+// @version      1.7.2
 // @description  Overlay + Utilities for BombParty!
 // @icon         https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/dist/icon.png
 // @icon64       https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/dist/icon64.png
@@ -57,28 +57,28 @@ addJQuery(function () {});
 // This is necessary because in this environment I don't have access to the JSON object
 var json_parse=function(){"use strict";var e,t,n={'"':'"',"\\":"\\","/":"/",b:"\b",f:"\f",n:"\n",r:"\r",t:"    "},r,i=function(t){throw{name:"SyntaxError",message:t,at:e,text:r}},s=function(n){if(n&&n!==t){i("Expected '"+n+"' instead of '"+t+"'")}t=r.charAt(e);e+=1;return t},o=function(){var e,n="";if(t==="-"){n="-";s("-")}while(t>="0"&&t<="9"){n+=t;s()}if(t==="."){n+=".";while(s()&&t>="0"&&t<="9"){n+=t}}if(t==="e"||t==="E"){n+=t;s();if(t==="-"||t==="+"){n+=t;s()}while(t>="0"&&t<="9"){n+=t;s()}}e=+n;if(!isFinite(e)){i("Bad number")}else{return e}},u=function(){var e,r,o="",u;if(t==='"'){while(s()){if(t==='"'){s();return o}if(t==="\\"){s();if(t==="u"){u=0;for(r=0;r<4;r+=1){e=parseInt(s(),16);if(!isFinite(e)){break}u=u*16+e}o+=String.fromCharCode(u)}else if(typeof n[t]==="string"){o+=n[t]}else{break}}else{o+=t}}}i("Bad string")},a=function(){while(t&&t<=" "){s()}},f=function(){switch(t){case"t":s("t");s("r");s("u");s("e");return true;case"f":s("f");s("a");s("l");s("s");s("e");return false;case"n":s("n");s("u");s("l");s("l");return null}i("Unexpected '"+t+"'")},l,c=function(){var e=[];if(t==="["){s("[");a();if(t==="]"){s("]");return e}while(t){e.push(l());a();if(t==="]"){s("]");return e}s(",");a()}}i("Bad array")},h=function(){var e,n={};if(t==="{"){s("{");a();if(t==="}"){s("}");return n}while(t){e=u();a();s(":");if(Object.hasOwnProperty.call(n,e)){i('Duplicate key "'+e+'"')}n[e]=l();a();if(t==="}"){s("}");return n}s(",");a()}}i("Bad object")};l=function(){a();switch(t){case"{":return h();case"[":return c();case'"':return u();case"-":return o();default:return t>="0"&&t<="9"?o():f()}};return function(n,s){var o;r=n;e=0;t=" ";o=l();a();if(t){i("Syntax error")}return typeof s==="function"?function u(e,t){var n,r,i=e[t];if(i&&typeof i==="object"){for(n in i){if(Object.prototype.hasOwnProperty.call(i,n)){r=u(i,n);if(r!==undefined){i[n]=r}else{delete i[n]}}}}return s.call(e,t,i)}({"":o},""):o}}()
 
-try{
-    // Grab the twitch emotes
-    var tg = GM_getResourceText("twitch_global");
-    var ts = GM_getResourceText("twitch_subscriber");
-    var ffz = GM_getResourceText("ffz_emotes");
-    json_parse(tg);
-    json_parse(ts);
-    json_parse(ffz);
-    tg = (tg === "") ? "undefined" : tg;
-    ts = (ts === "") ? "undefined" : ts;
-    ffz = (ffz === "") ? "undefined" : ffz;
-    var te = document.createElement('script');
-    te.setAttribute("type", "application/javascript");
-    te.textContent = 
-    'var twitch_global = ' + tg + ';' +
-    'var twitch_subscriber = ' + ts + ';' +
-    'var ffz_emotes = ' + ffz + ';';
-    document.body.appendChild(te);
-    document.body.removeChild(te);
+var loadJSON = function (resourceName, variableName) {
+    var resource = "undefined";
+    try {
+        resource = GM_getResourceText(resourceName);
+        json_parse(resource);
+    }
+    catch (e) {
+        console.log("Error loading " + resourceName);
+        resource = "undefined";
+    }
+    finally {
+        var script = document.createElement("script");
+        script.setAttribute("type", "application/javascript");
+        script.textContent = "var " + variableName + " = " + resource + ";";
+        document.body.appendChild(script);
+        document.body.removeChild(script);
+    }
 }
-finally {
-}
+
+loadJSON("twitch_global", "twitch_global");
+loadJSON("twitch_subscriber", "twitch_subscriber");
+loadJSON("ffz_emotes", "ffz_emotes");
 
 var te = document.createElement('script');
 te.setAttribute("type", "application/javascript");
@@ -2025,9 +2025,9 @@ var source = function() {
             
             // Process twitch emotes
             try {
-                var globalEmotes = twitch_global;
-                var subEmotes = twitch_subscriber;
-                var ffzEmotes = ffz_emotes;
+                var globalEmotes = window.twitch_global;
+                var subEmotes = window.twitch_subscriber;
+                var ffzEmotes = window.ffz_emotes;
                 
                 // TODO: Move this to a resource file somewhere
                 var specialEmotes = {
@@ -2146,8 +2146,9 @@ var source = function() {
             catch (e) {
                 // Emote loading failed
                 console.error(e);
-
-                channel.appendToChat("Info", "Loading of twitch emotes failed :(");
+                console.error("Twitch emotes have not loaded. This is likely to be an API error " +
+                    "(check http://twitchemotes.com/api_cache/v2/global.json " + 
+                    "http://twitchemotes.com/api_cache/v2/subscriber.json and http://api.frankerfacez.com/v1/set/global )");
                 bpOverlay.emoteError = true;
             }
 
