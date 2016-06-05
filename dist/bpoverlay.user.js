@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         BombParty Overlay
-// @version      1.7.3
+// @version      1.7.4
 // @description  Overlay + Utilities for BombParty!
 // @icon         https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/dist/icon.png
 // @icon64       https://raw.githubusercontent.com/MrInanimated/bp-overlay/master/dist/icon64.png
@@ -2037,6 +2037,10 @@ var source = function() {
                     },
                     "(ditto)": {
                         src: "//cdn.betterttv.net/emote/554da1a289d53f2d12781907/1x",
+                        titlePrefix: "(bttv) "
+                    },
+                    "(puke)": {
+                        src: "//cdn.betterttv.net/emote/550288fe135896936880fdd4/1x",
                         titlePrefix: "(bttv) "
                     },
                     "MikuStare": {
